@@ -69,7 +69,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
       // NOTA: a redirect URL abaixo precisa estar liberada em Supabase → Auth → URL Configuration.
       // Em Expo Go ela é uma URL exp://; em dev build usa o scheme "familylocation".
-      const redirectTo = makeRedirectUri({ scheme: 'familylocation', path: 'auth-callback' });
+      const redirectTo = makeRedirectUri({ path: 'auth-callback' });
 
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
