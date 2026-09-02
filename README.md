@@ -13,7 +13,7 @@ locais importantes no mapa (com geofence e notificações de entrada/saída).
 
 | Camada | Tecnologia |
 |---|---|
-| Framework | [Expo](https://expo.dev) (SDK 57) + React Native 0.86 |
+| Framework | [Expo](https://expo.dev) (SDK 54) + React Native 0.81 |
 | Linguagem | TypeScript (strict) |
 | Navegação | [Expo Router](https://docs.expo.dev/router/introduction) (baseada em arquivos, em `src/app`) |
 | UI / estilo | [NativeWind](https://www.nativewind.dev) v4 (Tailwind) + design system próprio (`src/theme`, `src/components`) |
