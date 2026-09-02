@@ -26,9 +26,12 @@ function RootNavigator() {
 
   useEffect(() => {
     if (loading || !configured) return;
+    const inAuth = segments[0] === '(auth)';
     const inMain = segments[0] === '(main)';
-    if (inMain && !session) {
+    if (!session && inMain) {
       router.replace('/login');
+    } else if (session && inAuth) {
+      router.replace('/map');
     }
   }, [session, loading, configured, segments, router]);
 

@@ -1,5 +1,7 @@
 export { Button } from './Button';
 export type { ButtonProps, ButtonSize, ButtonVariant } from './Button';
+export { Input } from './Input';
+export type { InputProps } from './Input';
 export { Screen } from './Screen';
 export type { ScreenProps } from './Screen';
 export { Text } from './Text';
