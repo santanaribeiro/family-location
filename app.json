@@ -48,6 +48,13 @@
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
-    }
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "45d0e279-7f16-4d27-ad86-f45fbcbe4a5b"
+      }
+    },
+    "owner": "santanaribeiro"
   }
 }
