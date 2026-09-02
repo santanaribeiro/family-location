@@ -34,6 +34,15 @@
           "image": "./assets/images/splash-icon.png",
           "imageWidth": 76
         }
+      ],
+      [
+        "expo-location",
+        {
+          "locationAlwaysAndWhenInUsePermission": "O Family Location usa sua localização para compartilhar com a sua família, mesmo com o app em segundo plano.",
+          "locationWhenInUsePermission": "O Family Location usa sua localização para mostrar você no mapa da família.",
+          "isAndroidBackgroundLocationEnabled": true,
+          "isAndroidForegroundServiceEnabled": true
+        }
       ]
     ],
     "experiments": {
