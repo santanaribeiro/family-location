@@ -18,6 +18,8 @@ export interface FamilyMapProps {
   /** Centraliza o mapa nesse ponto sempre que `key` mudar (ex.: membro selecionado na lista). */
   focus?: { latitude: number; longitude: number; key: number } | null;
   places?: SavedPlace[];
+  /** Toque longo no mapa (fora de marcadores) — usado para criar um local naquele ponto. */
+  onPickLocation?: (coord: { latitude: number; longitude: number }) => void;
 }
 
 /** Marcador com o avatar (foto) do membro; cai para iniciais se não houver foto ou ela falhar. */
@@ -83,7 +85,7 @@ function PlaceMarker({ place }: { place: SavedPlace }) {
 }
 
 /** Mapa nativo (react-native-maps) — usado no dev build. */
-export default function FamilyMap({ members, initialRegion, own, focus, places = [] }: FamilyMapProps) {
+export default function FamilyMap({ members, initialRegion, own, focus, places = [], onPickLocation }: FamilyMapProps) {
   const mapRef = useRef<MapView>(null);
 
   useEffect(() => {
@@ -105,7 +107,14 @@ export default function FamilyMap({ members, initialRegion, own, focus, places =
   }, [focus]);
 
   return (
-    <MapView ref={mapRef} style={{ flex: 1 }} initialRegion={initialRegion} showsUserLocation showsMyLocationButton>
+    <MapView
+      ref={mapRef}
+      style={{ flex: 1 }}
+      initialRegion={initialRegion}
+      showsUserLocation
+      showsMyLocationButton
+      onLongPress={(e) => onPickLocation?.(e.nativeEvent.coordinate)}
+    >
       {places.map((place) => (
         <PlaceMarker key={place.id} place={place} />
       ))}

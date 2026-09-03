@@ -17,6 +17,8 @@ export interface FamilyMapProps {
   /** Centraliza o mapa nesse ponto sempre que `key` mudar (ex.: membro selecionado na lista). */
   focus?: { latitude: number; longitude: number; key: number } | null;
   places?: SavedPlace[];
+  /** Clique no mapa (fora de marcadores) — usado para criar um local naquele ponto. */
+  onPickLocation?: (coord: { latitude: number; longitude: number }) => void;
 }
 
 const apiKey = process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY ?? '';
@@ -136,7 +138,7 @@ function PlacePin({ place }: { place: SavedPlace }) {
 }
 
 /** Mapa na web via Google Maps JavaScript API, com avatares dos membros. */
-export default function FamilyMap({ members, initialRegion, own, focus, places = [] }: FamilyMapProps) {
+export default function FamilyMap({ members, initialRegion, own, focus, places = [], onPickLocation }: FamilyMapProps) {
   if (!apiKey) {
     return (
       <Screen>
@@ -161,6 +163,9 @@ export default function FamilyMap({ members, initialRegion, own, focus, places =
           defaultCenter={{ lat: initialRegion.latitude, lng: initialRegion.longitude }}
           defaultZoom={13}
           gestureHandling="greedy"
+          onClick={(e) => {
+            if (e.detail.latLng) onPickLocation?.({ latitude: e.detail.latLng.lat, longitude: e.detail.latLng.lng });
+          }}
         >
           <Recenter own={own} />
           <Focus focus={focus} />

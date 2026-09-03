@@ -21,11 +21,20 @@ interface PlaceFormModalProps {
   familyId: string;
   /** Presente = editar; ausente = criar. */
   place?: SavedPlace | null;
+  /** Ao criar: coordenada já escolhida (ex.: toque no mapa) — pula a localização atual. */
+  initialCoordinate?: { latitude: number; longitude: number } | null;
   onClose: () => void;
   onSaved: () => void;
 }
 
-export function PlaceFormModal({ visible, familyId, place, onClose, onSaved }: PlaceFormModalProps) {
+export function PlaceFormModal({
+  visible,
+  familyId,
+  place,
+  initialCoordinate,
+  onClose,
+  onSaved,
+}: PlaceFormModalProps) {
   const [name, setName] = useState('');
   const [icon, setIcon] = useState(DEFAULT_PLACE_ICON);
   const [coord, setCoord] = useState(DEFAULT_COORD);
@@ -44,13 +53,17 @@ export function PlaceFormModal({ visible, familyId, place, onClose, onSaved }: P
     setName('');
     setIcon(DEFAULT_PLACE_ICON);
     setRadius(100);
+    if (initialCoordinate) {
+      setCoord(initialCoordinate);
+      return;
+    }
     setCoord(DEFAULT_COORD);
     getCurrent()
       .then((loc) => {
         if (loc) setCoord({ latitude: loc.coords.latitude, longitude: loc.coords.longitude });
       })
       .catch(() => {});
-  }, [visible, place]);
+  }, [visible, place, initialCoordinate]);
 
   function close() {
     setBusy(false);

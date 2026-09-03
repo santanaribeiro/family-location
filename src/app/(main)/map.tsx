@@ -12,6 +12,7 @@ import { FamilySelector } from '@/components/FamilySelector';
 import FamilyMap from '@/components/FamilyMap';
 import { JoinFamilyButton } from '@/components/JoinFamilyButton';
 import { MemberRow } from '@/components/MemberRow';
+import { PlaceFormModal } from '@/components/PlaceFormModal';
 import { useAuth } from '@/services/auth';
 import { listMembers, listMyFamilies, type FamilyWithRole, type MemberWithUser } from '@/services/family';
 import {
@@ -60,6 +61,7 @@ export default function MapScreen() {
   const [focusTarget, setFocusTarget] = useState<{ latitude: number; longitude: number; key: number } | null>(
     null,
   );
+  const [createPlaceAt, setCreatePlaceAt] = useState<{ latitude: number; longitude: number } | null>(null);
   const subscriptionRef = useRef<LocationSubscription | null>(null);
   const bottomSheetRef = useRef<BottomSheet>(null);
 
@@ -204,7 +206,14 @@ export default function MapScreen() {
 
   return (
     <View className="flex-1">
-      <FamilyMap members={located} initialRegion={initialRegion} own={own} focus={focusTarget} places={places} />
+      <FamilyMap
+        members={located}
+        initialRegion={initialRegion}
+        own={own}
+        focus={focusTarget}
+        places={places}
+        onPickLocation={setCreatePlaceAt}
+      />
 
       {/* Topo: seletor de família + botão de entrar */}
       <View className="absolute inset-x-0" style={{ top: insets.top + 8 }} pointerEvents="box-none">
@@ -252,6 +261,14 @@ export default function MapScreen() {
           ) : null}
         </BottomSheetScrollView>
       </BottomSheet>
+
+      <PlaceFormModal
+        visible={createPlaceAt !== null}
+        familyId={activeFamilyId}
+        initialCoordinate={createPlaceAt}
+        onClose={() => setCreatePlaceAt(null)}
+        onSaved={() => setCreatePlaceAt(null)}
+      />
     </View>
   );
 }
