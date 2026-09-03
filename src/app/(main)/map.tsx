@@ -114,6 +114,7 @@ export default function MapScreen() {
     <FamilyMap
       members={members}
       initialRegion={initialRegion}
+      own={own}
       backgroundOn={backgroundOn}
       onToggleBackground={toggleBackground}
     />

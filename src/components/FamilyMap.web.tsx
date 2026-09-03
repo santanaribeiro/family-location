@@ -1,4 +1,5 @@
-import { AdvancedMarker, APIProvider, Map } from '@vis.gl/react-google-maps';
+import { AdvancedMarker, APIProvider, Map, useMap } from '@vis.gl/react-google-maps';
+import { useEffect, useState } from 'react';
 import { View } from 'react-native';
 
 import { Screen, Text } from '@/components';
@@ -8,6 +9,7 @@ import { initials } from '@/utils/avatar';
 export interface FamilyMapProps {
   members: MemberLocation[];
   initialRegion: { latitude: number; longitude: number; latitudeDelta: number; longitudeDelta: number };
+  own?: { latitude: number; longitude: number } | null;
   backgroundOn: boolean;
   onToggleBackground: () => void;
 }
@@ -16,8 +18,22 @@ const apiKey = process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY ?? '';
 // AdvancedMarker (avatar customizado) exige um Map ID. DEMO_MAP_ID funciona para desenvolvimento.
 const mapId = process.env.EXPO_PUBLIC_GOOGLE_MAPS_ID || 'DEMO_MAP_ID';
 
+/** Recentraliza o mapa na posição do usuário assim que ela fica disponível. */
+function Recenter({ own }: { own?: { latitude: number; longitude: number } | null }) {
+  const map = useMap();
+  useEffect(() => {
+    if (map && own) {
+      map.panTo({ lat: own.latitude, lng: own.longitude });
+      map.setZoom(15);
+    }
+  }, [map, own]);
+  return null;
+}
+
 function AvatarPin({ member }: { member: MemberLocation }) {
+  const [failed, setFailed] = useState(false);
   const url = member.user?.avatar_url;
+  const showImage = url && !failed;
   return (
     <div
       style={{
@@ -33,8 +49,14 @@ function AvatarPin({ member }: { member: MemberLocation }) {
         justifyContent: 'center',
       }}
     >
-      {url ? (
-        <img src={url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+      {showImage ? (
+        <img
+          src={url}
+          alt=""
+          referrerPolicy="no-referrer"
+          style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+          onError={() => setFailed(true)}
+        />
       ) : (
         <span style={{ color: '#fff', fontWeight: 700, fontSize: 14 }}>
           {initials(member.user?.name ?? member.user?.email)}
@@ -45,7 +67,7 @@ function AvatarPin({ member }: { member: MemberLocation }) {
 }
 
 /** Mapa na web via Google Maps JavaScript API, com avatares dos membros. */
-export default function FamilyMap({ members, initialRegion }: FamilyMapProps) {
+export default function FamilyMap({ members, initialRegion, own }: FamilyMapProps) {
   if (!apiKey) {
     return (
       <Screen>
@@ -71,6 +93,7 @@ export default function FamilyMap({ members, initialRegion }: FamilyMapProps) {
           defaultZoom={13}
           gestureHandling="greedy"
         >
+          <Recenter own={own} />
           {members.map((member) => (
             <AdvancedMarker
               key={member.user_id}

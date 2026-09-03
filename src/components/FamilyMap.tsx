@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Image, View } from 'react-native';
 import MapView, { Marker } from 'react-native-maps';
 
@@ -10,6 +10,7 @@ import { initials } from '@/utils/avatar';
 export interface FamilyMapProps {
   members: MemberLocation[];
   initialRegion: { latitude: number; longitude: number; latitudeDelta: number; longitudeDelta: number };
+  own?: { latitude: number; longitude: number } | null;
   backgroundOn: boolean;
   onToggleBackground: () => void;
 }
@@ -24,10 +25,12 @@ function timeAgo(iso: string): string {
   return `há ${Math.floor(hours / 24)}d`;
 }
 
-/** Marcador com o avatar (foto) do membro. `tracksViewChanges` fica true até a foto carregar. */
+/** Marcador com o avatar (foto) do membro; cai para iniciais se não houver foto ou ela falhar. */
 function AvatarMarker({ member }: { member: MemberLocation }) {
   const [ready, setReady] = useState(false);
+  const [failed, setFailed] = useState(false);
   const url = member.user?.avatar_url ?? undefined;
+  const showImage = url && !failed;
   const label = member.user?.name ?? member.user?.email ?? 'Membro';
 
   return (
@@ -39,12 +42,15 @@ function AvatarMarker({ member }: { member: MemberLocation }) {
       anchor={{ x: 0.5, y: 0.5 }}
     >
       <View className="h-12 w-12 items-center justify-center overflow-hidden rounded-full border-2 border-white bg-brand-500">
-        {url ? (
+        {showImage ? (
           <Image
             source={{ uri: url }}
             className="h-full w-full"
             onLoad={() => setReady(true)}
-            onError={() => setReady(true)}
+            onError={() => {
+              setFailed(true);
+              setReady(false);
+            }}
           />
         ) : (
           <Text className="font-bold text-white" onLayout={() => setReady(true)}>
@@ -57,10 +63,21 @@ function AvatarMarker({ member }: { member: MemberLocation }) {
 }
 
 /** Mapa nativo (react-native-maps) — usado no dev build. */
-export default function FamilyMap({ members, initialRegion, backgroundOn, onToggleBackground }: FamilyMapProps) {
+export default function FamilyMap({ members, initialRegion, own, backgroundOn, onToggleBackground }: FamilyMapProps) {
+  const mapRef = useRef<MapView>(null);
+
+  useEffect(() => {
+    if (own) {
+      mapRef.current?.animateToRegion(
+        { latitude: own.latitude, longitude: own.longitude, latitudeDelta: 0.02, longitudeDelta: 0.02 },
+        600,
+      );
+    }
+  }, [own]);
+
   return (
     <View className="flex-1">
-      <MapView style={{ flex: 1 }} initialRegion={initialRegion} showsUserLocation showsMyLocationButton>
+      <MapView ref={mapRef} style={{ flex: 1 }} initialRegion={initialRegion} showsUserLocation showsMyLocationButton>
         {members.map((member) => (
           <AvatarMarker key={member.user_id} member={member} />
         ))}
