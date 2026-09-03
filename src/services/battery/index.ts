@@ -1,4 +1,5 @@
 import * as Battery from 'expo-battery';
+import { Platform } from 'react-native';
 
 import { supabase } from '@/services/supabase';
 import type { BatteryStateText, UserDeviceStatus } from '@/types/database';
@@ -53,8 +54,17 @@ export async function upsertBatteryStatus(snapshot?: BatterySnapshot): Promise<v
   });
 }
 
-/** Observa mudanças bruscas de bateria (nível ou estado) e reporta imediatamente. */
+/**
+ * Observa mudanças bruscas de bateria (nível ou estado) e reporta imediatamente.
+ *
+ * No web, o módulo nativo do expo-battery não implementa `addListener` — chamar
+ * `addBatteryLevelListener`/`addBatteryStateListener` lá lança "addListener is not
+ * a function" na hora, não só "o evento nunca dispara" como a doc sugere. O upsert
+ * por ciclo (watchAndSync) já cobre o web de qualquer forma, então só pula lá.
+ */
 export function watchBattery(): () => void {
+  if (Platform.OS === 'web') return () => {};
+
   const levelSub = Battery.addBatteryLevelListener(() => {
     void upsertBatteryStatus();
   });
