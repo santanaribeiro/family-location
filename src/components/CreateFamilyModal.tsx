@@ -1,9 +1,10 @@
 import * as Clipboard from 'expo-clipboard';
 import { useState } from 'react';
-import { Alert, Modal, Pressable, Share, View } from 'react-native';
+import { Modal, Pressable, Share, View } from 'react-native';
 
 import { Button, Input, Text } from '@/components';
 import { createFamily, createInvite } from '@/services/family';
+import { notify } from '@/utils/alert';
 import { inviteLink, inviteMessage } from '@/utils/invite';
 
 interface CreateFamilyModalProps {
@@ -34,7 +35,7 @@ export function CreateFamilyModal({ visible, onClose, onCreated }: CreateFamilyM
       setCreated({ familyName: family.name, token });
       onCreated();
     } catch (error) {
-      Alert.alert('Família', error instanceof Error ? error.message : 'Erro ao criar a família.');
+      notify('Família', error instanceof Error ? error.message : 'Erro ao criar a família.');
     } finally {
       setBusy(false);
     }
@@ -43,7 +44,7 @@ export function CreateFamilyModal({ visible, onClose, onCreated }: CreateFamilyM
   async function copyLink() {
     if (!created) return;
     await Clipboard.setStringAsync(inviteLink(created.token));
-    Alert.alert('Copiado', 'Link do convite copiado.');
+    notify('Copiado', 'Link do convite copiado.');
   }
 
   async function shareInvite() {

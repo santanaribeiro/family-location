@@ -1,10 +1,11 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useState } from 'react';
-import { Alert, Modal, Pressable, View } from 'react-native';
+import { Modal, Pressable, View } from 'react-native';
 
 import { Button, Input, Text } from '@/components';
 import { acceptInvite } from '@/services/family';
 import { colors, shadows } from '@/theme';
+import { notify } from '@/utils/alert';
 import { extractInviteToken } from '@/utils/invite';
 
 /** Botão (para o topo do mapa) que abre um modal para entrar em uma família via código/link. */
@@ -21,9 +22,9 @@ export function JoinFamilyButton({ onJoined }: { onJoined: () => void }) {
       setCode('');
       setOpen(false);
       onJoined();
-      Alert.alert('Pronto', 'Você entrou na família!');
+      notify('Pronto', 'Você entrou na família!');
     } catch (error) {
-      Alert.alert('Convite', error instanceof Error ? error.message : 'Convite inválido ou expirado.');
+      notify('Convite', error instanceof Error ? error.message : 'Convite inválido ou expirado.');
     } finally {
       setBusy(false);
     }

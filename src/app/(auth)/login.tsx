@@ -1,8 +1,9 @@
 import { useState } from 'react';
-import { Alert, View } from 'react-native';
+import { Image, View } from 'react-native';
 
-import { Button, Screen, Text } from '@/components';
+import { Button, Screen } from '@/components';
 import { useAuth } from '@/services/auth';
+import { notify } from '@/utils/alert';
 
 export default function LoginScreen() {
   const { signInWithGoogle } = useAuth();
@@ -13,7 +14,7 @@ export default function LoginScreen() {
       setBusy(true);
       await signInWithGoogle();
     } catch (error) {
-      Alert.alert('Login', error instanceof Error ? error.message : 'Falha ao entrar.');
+      notify('Login', error instanceof Error ? error.message : 'Falha ao entrar.');
     } finally {
       setBusy(false);
     }
@@ -21,16 +22,8 @@ export default function LoginScreen() {
 
   return (
     <Screen>
-      <View className="flex-1 items-center justify-center gap-md">
-        <View className="h-20 w-20 items-center justify-center rounded-2xl bg-brand-500">
-          <Text className="text-4xl">📍</Text>
-        </View>
-        <Text variant="title" className="text-center">
-          Family Location
-        </Text>
-        <Text variant="muted" className="text-center">
-          Veja onde sua família está, em tempo real. Entre para começar.
-        </Text>
+      <View className="flex-1 items-center justify-center">
+        <Image source={require('@/assets/images/logo.png')} style={{ width: 160, height: 160 }} resizeMode="contain" />
       </View>
 
       <View className="gap-sm pb-md">

@@ -2,7 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Clipboard from 'expo-clipboard';
 import { useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
-import { Alert, Pressable, ScrollView, View } from 'react-native';
+import { Pressable, ScrollView, View } from 'react-native';
 
 import { Button, Screen, Text } from '@/components';
 import { CreateFamilyModal } from '@/components/CreateFamilyModal';
@@ -11,6 +11,7 @@ import { createInvite, leaveFamily, listMyFamilies, type FamilyWithRole } from '
 import { useFamilyStore } from '@/stores/familyStore';
 import { colors } from '@/theme';
 import type { FamilyRole } from '@/types/database';
+import { confirmAsync, notify } from '@/utils/alert';
 import { inviteLink } from '@/utils/invite';
 
 const roleLabel: Record<FamilyRole, string> = {
@@ -37,30 +38,23 @@ export default function FamilyScreen() {
     try {
       const token = await createInvite(family.id);
       await Clipboard.setStringAsync(inviteLink(token));
-      Alert.alert('Convite copiado', `O link de convite para “${family.name}” foi copiado. É só colar e enviar.`);
+      notify('Convite copiado', `O link de convite para “${family.name}” foi copiado. É só colar e enviar.`);
     } catch (error) {
-      Alert.alert('Convite', error instanceof Error ? error.message : 'Erro ao gerar o convite.');
+      notify('Convite', error instanceof Error ? error.message : 'Erro ao gerar o convite.');
     }
   }
 
-  function confirmLeave(family: FamilyWithRole) {
+  async function confirmLeave(family: FamilyWithRole) {
     if (!user) return;
-    Alert.alert('Sair da família', `Deseja sair de “${family.name}”?`, [
-      { text: 'Cancelar', style: 'cancel' },
-      {
-        text: 'Sair',
-        style: 'destructive',
-        onPress: async () => {
-          try {
-            await leaveFamily(family.id, user.id);
-            if (activeFamilyId === family.id) setActiveFamily(null);
-            load();
-          } catch (error) {
-            Alert.alert('Família', error instanceof Error ? error.message : 'Erro ao sair.');
-          }
-        },
-      },
-    ]);
+    const ok = await confirmAsync('Sair da família', `Deseja sair de “${family.name}”?`, 'Sair');
+    if (!ok) return;
+    try {
+      await leaveFamily(family.id, user.id);
+      if (activeFamilyId === family.id) setActiveFamily(null);
+      load();
+    } catch (error) {
+      notify('Família', error instanceof Error ? error.message : 'Erro ao sair.');
+    }
   }
 
   return (

@@ -4,7 +4,7 @@ import Constants, { ExecutionEnvironment } from 'expo-constants';
 import type { LocationSubscription } from 'expo-location';
 import { useFocusEffect } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Alert, Platform, View } from 'react-native';
+import { Platform, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Button, Screen, Text } from '@/components';
@@ -23,6 +23,7 @@ import {
 import { isBackgroundActive, startBackgroundUpdates } from '@/services/location/background';
 import { useFamilyStore } from '@/stores/familyStore';
 import { colors } from '@/theme';
+import { notify } from '@/utils/alert';
 
 const isExpoGo = Constants.executionEnvironment === ExecutionEnvironment.StoreClient;
 const supportsBackground = Platform.OS !== 'web' && !isExpoGo;
@@ -134,13 +135,13 @@ export default function MapScreen() {
       const ok = await startBackgroundUpdates();
       setBackgroundOn(ok);
       if (!ok) {
-        Alert.alert(
+        notify(
           'Localização',
           'Para compartilhar em segundo plano, permita a localização “o tempo todo” nas configurações.',
         );
       }
     } catch (error) {
-      Alert.alert('Localização', error instanceof Error ? error.message : 'Erro ao ativar o compartilhamento.');
+      notify('Localização', error instanceof Error ? error.message : 'Erro ao ativar o compartilhamento.');
     }
   }
 
