@@ -11,6 +11,7 @@ import { Button, Screen, Text } from '@/components';
 import { ChatModal } from '@/components/ChatModal';
 import { FamilySelector } from '@/components/FamilySelector';
 import FamilyMap from '@/components/FamilyMap';
+import { HistoryModal } from '@/components/HistoryModal';
 import { JoinFamilyButton } from '@/components/JoinFamilyButton';
 import { MemberRow } from '@/components/MemberRow';
 import { PlaceFormModal } from '@/components/PlaceFormModal';
@@ -69,6 +70,7 @@ export default function MapScreen() {
   const [createPlaceAt, setCreatePlaceAt] = useState<{ latitude: number; longitude: number } | null>(null);
   const [chatOpen, setChatOpen] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [historyFor, setHistoryFor] = useState<{ userId: string; name: string } | null>(null);
   const [familiesLoading, setFamiliesLoading] = useState(true);
   const [membersLoading, setMembersLoading] = useState(true);
   const subscriptionRef = useRef<LocationSubscription | null>(null);
@@ -348,6 +350,7 @@ export default function MapScreen() {
                   recordedAt={row.recordedAt}
                   batteryLevel={row.batteryLevel}
                   batteryState={row.batteryState}
+                  onHistoryPress={() => setHistoryFor({ userId: row.key, name: row.name })}
                 />
               </Pressable>
             ))
@@ -386,6 +389,13 @@ export default function MapScreen() {
           families.find((f) => f.id === activeFamilyId)?.role === 'admin'
         }
         onClose={() => setChatOpen(false)}
+      />
+
+      <HistoryModal
+        visible={historyFor !== null}
+        userId={historyFor?.userId ?? ''}
+        userName={historyFor?.name ?? ''}
+        onClose={() => setHistoryFor(null)}
       />
     </View>
   );

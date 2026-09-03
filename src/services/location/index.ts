@@ -30,22 +30,23 @@ export async function getCurrent(): Promise<Location.LocationObject | null> {
   return Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
 }
 
-/** Faz upsert da última localização conhecida do usuário logado. */
+/**
+ * Atualiza a última localização conhecida do usuário logado via RPC — numa
+ * transação só, o banco também grava no histórico (com throttle) e limpa o
+ * histórico velho (>7 dias), além de disparar a detecção de geofence (Presença).
+ * Ver supabase/migrations/20260903160000_location_history.sql.
+ */
 export async function saveLocation(loc: Location.LocationObject): Promise<void> {
   const c = client();
-  const { data: userRes } = await c.auth.getUser();
-  const uid = userRes.user?.id;
-  if (!uid) return;
   const { coords, timestamp } = loc;
-  await c.from('user_locations').upsert({
-    user_id: uid,
-    latitude: coords.latitude,
-    longitude: coords.longitude,
-    accuracy: coords.accuracy,
-    altitude: coords.altitude,
-    speed: coords.speed,
-    heading: coords.heading,
-    recorded_at: new Date(timestamp).toISOString(),
+  await c.rpc('save_location', {
+    p_lat: coords.latitude,
+    p_lng: coords.longitude,
+    p_accuracy: coords.accuracy,
+    p_altitude: coords.altitude,
+    p_speed: coords.speed,
+    p_heading: coords.heading,
+    p_recorded_at: new Date(timestamp).toISOString(),
   });
 }
 
