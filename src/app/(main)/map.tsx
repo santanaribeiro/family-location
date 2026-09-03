@@ -1,10 +1,10 @@
 import Constants, { ExecutionEnvironment } from 'expo-constants';
 import type { LocationSubscription } from 'expo-location';
 import { useEffect, useRef, useState } from 'react';
-import { View } from 'react-native';
-import MapView, { Marker } from 'react-native-maps';
+import { Platform, View } from 'react-native';
 
-import { Button, Screen, Text } from '@/components';
+import { Screen, Text } from '@/components';
+import FamilyMap from '@/components/FamilyMap';
 import {
   getCurrent,
   getFamilyLocations,
@@ -15,18 +15,8 @@ import {
 import { startBackgroundUpdates, stopBackgroundUpdates } from '@/services/location/background';
 import { useFamilyStore } from '@/stores/familyStore';
 
-// react-native-maps e o GPS nativo não existem no Expo Go — só no dev build.
 const isExpoGo = Constants.executionEnvironment === ExecutionEnvironment.StoreClient;
-
-function timeAgo(iso: string): string {
-  const seconds = Math.max(0, Math.floor((Date.now() - new Date(iso).getTime()) / 1000));
-  if (seconds < 60) return `há ${seconds}s`;
-  const minutes = Math.floor(seconds / 60);
-  if (minutes < 60) return `há ${minutes}min`;
-  const hours = Math.floor(minutes / 60);
-  if (hours < 24) return `há ${hours}h`;
-  return `há ${Math.floor(hours / 24)}d`;
-}
+const nativeMapAvailable = !isExpoGo && Platform.OS !== 'web';
 
 export default function MapScreen() {
   const { activeFamilyId } = useFamilyStore();
@@ -57,7 +47,7 @@ export default function MapScreen() {
   }, [activeFamilyId]);
 
   useEffect(() => {
-    if (isExpoGo) return;
+    if (!nativeMapAvailable) return;
     let active = true;
     (async () => {
       const current = await getCurrent();
@@ -74,6 +64,7 @@ export default function MapScreen() {
     };
   }, []);
 
+  // No Expo Go o react-native-maps trava — mostramos um aviso (no dev build renderiza o mapa).
   if (isExpoGo) {
     return (
       <Screen>
@@ -82,7 +73,7 @@ export default function MapScreen() {
             Mapa
           </Text>
           <Text variant="muted" className="text-center">
-            O mapa e o GPS usam módulos nativos: eles rodam no dev build (EAS), não no Expo Go.
+            O mapa e o GPS rodam no dev build (EAS), não no Expo Go.
           </Text>
         </View>
       </Screen>
@@ -121,24 +112,11 @@ export default function MapScreen() {
   }
 
   return (
-    <View className="flex-1">
-      <MapView style={{ flex: 1 }} initialRegion={initialRegion} showsUserLocation showsMyLocationButton>
-        {members.map((member) => (
-          <Marker
-            key={member.user_id}
-            coordinate={{ latitude: member.latitude, longitude: member.longitude }}
-            title={member.user?.name ?? member.user?.email ?? 'Membro'}
-            description={`Atualizado ${timeAgo(member.recorded_at)}`}
-          />
-        ))}
-      </MapView>
-      <View className="absolute inset-x-0 bottom-0 p-md">
-        <Button
-          title={backgroundOn ? 'Parar compartilhamento em 2º plano' : 'Compartilhar em 2º plano'}
-          variant={backgroundOn ? 'secondary' : 'primary'}
-          onPress={toggleBackground}
-        />
-      </View>
-    </View>
+    <FamilyMap
+      members={members}
+      initialRegion={initialRegion}
+      backgroundOn={backgroundOn}
+      onToggleBackground={toggleBackground}
+    />
   );
 }
