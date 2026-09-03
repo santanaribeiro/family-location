@@ -21,8 +21,10 @@ import {
   type MemberLocation,
 } from '@/services/location';
 import { isBackgroundActive, startBackgroundUpdates } from '@/services/location/background';
+import { listPlaces, subscribePlaces } from '@/services/places';
 import { useFamilyStore } from '@/stores/familyStore';
 import { colors } from '@/theme';
+import type { SavedPlace } from '@/types/database';
 import { notify } from '@/utils/alert';
 
 const isExpoGo = Constants.executionEnvironment === ExecutionEnvironment.StoreClient;
@@ -50,6 +52,7 @@ export default function MapScreen() {
   const [families, setFamilies] = useState<FamilyWithRole[]>([]);
   const [allMembers, setAllMembers] = useState<MemberWithUser[]>([]);
   const [located, setLocated] = useState<MemberLocation[]>([]);
+  const [places, setPlaces] = useState<SavedPlace[]>([]);
   const [own, setOwn] = useState<{ latitude: number; longitude: number } | null>(null);
   const [backgroundOn, setBackgroundOn] = useState(false);
   const [focusTarget, setFocusTarget] = useState<{ latitude: number; longitude: number; key: number } | null>(
@@ -91,6 +94,27 @@ export default function MapScreen() {
     };
     refresh();
     const unsubscribe = subscribeFamilyLocations(refresh);
+    return () => {
+      cancelled = true;
+      unsubscribe();
+    };
+  }, [activeFamilyId]);
+
+  useEffect(() => {
+    if (!activeFamilyId) {
+      setPlaces([]);
+      return;
+    }
+    let cancelled = false;
+    const refresh = () => {
+      listPlaces(activeFamilyId)
+        .then((list) => {
+          if (!cancelled) setPlaces(list);
+        })
+        .catch(() => {});
+    };
+    refresh();
+    const unsubscribe = subscribePlaces(refresh);
     return () => {
       cancelled = true;
       unsubscribe();
@@ -177,7 +201,7 @@ export default function MapScreen() {
 
   return (
     <View className="flex-1">
-      <FamilyMap members={located} initialRegion={initialRegion} own={own} focus={focusTarget} />
+      <FamilyMap members={located} initialRegion={initialRegion} own={own} focus={focusTarget} places={places} />
 
       {/* Topo: seletor de família + botão de entrar */}
       <View className="absolute inset-x-0" style={{ top: insets.top + 8 }} pointerEvents="box-none">

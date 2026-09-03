@@ -1,10 +1,14 @@
+import { Ionicons } from '@expo/vector-icons';
 import { useEffect, useRef, useState } from 'react';
 import { Image, View } from 'react-native';
-import MapView, { Marker } from 'react-native-maps';
+import MapView, { Circle, Marker } from 'react-native-maps';
 
 import { Text } from '@/components/Text';
 import type { MemberLocation } from '@/services/location';
+import { colors } from '@/theme';
+import type { SavedPlace } from '@/types/database';
 import { initials } from '@/utils/avatar';
+import { placeIconName } from '@/utils/placeIcons';
 import { timeAgo } from '@/utils/time';
 
 export interface FamilyMapProps {
@@ -13,6 +17,7 @@ export interface FamilyMapProps {
   own?: { latitude: number; longitude: number } | null;
   /** Centraliza o mapa nesse ponto sempre que `key` mudar (ex.: membro selecionado na lista). */
   focus?: { latitude: number; longitude: number; key: number } | null;
+  places?: SavedPlace[];
 }
 
 /** Marcador com o avatar (foto) do membro; cai para iniciais se não houver foto ou ela falhar. */
@@ -52,8 +57,33 @@ function AvatarMarker({ member }: { member: MemberLocation }) {
   );
 }
 
+/** Marcador de um local salvo (casa, trabalho, etc.), com círculo do raio do geofence. */
+function PlaceMarker({ place }: { place: SavedPlace }) {
+  return (
+    <>
+      <Marker
+        coordinate={{ latitude: place.latitude, longitude: place.longitude }}
+        title={place.name}
+        description={`Raio de ${place.radius}m`}
+        anchor={{ x: 0.5, y: 0.5 }}
+      >
+        <View className="h-9 w-9 items-center justify-center rounded-full border-2 border-neutral-300 bg-neutral-700">
+          <Ionicons name={placeIconName(place.icon)} size={16} color={colors.neutral[100]} />
+        </View>
+      </Marker>
+      <Circle
+        center={{ latitude: place.latitude, longitude: place.longitude }}
+        radius={place.radius}
+        fillColor="rgba(122,122,122,0.18)"
+        strokeColor={colors.neutral[400]}
+        strokeWidth={1}
+      />
+    </>
+  );
+}
+
 /** Mapa nativo (react-native-maps) — usado no dev build. */
-export default function FamilyMap({ members, initialRegion, own, focus }: FamilyMapProps) {
+export default function FamilyMap({ members, initialRegion, own, focus, places = [] }: FamilyMapProps) {
   const mapRef = useRef<MapView>(null);
 
   useEffect(() => {
@@ -76,6 +106,9 @@ export default function FamilyMap({ members, initialRegion, own, focus }: Family
 
   return (
     <MapView ref={mapRef} style={{ flex: 1 }} initialRegion={initialRegion} showsUserLocation showsMyLocationButton>
+      {places.map((place) => (
+        <PlaceMarker key={place.id} place={place} />
+      ))}
       {members.map((member) => (
         <AvatarMarker key={member.user_id} member={member} />
       ))}

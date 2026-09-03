@@ -1,11 +1,14 @@
-import { AdvancedMarker, APIProvider, Map, useMap } from '@vis.gl/react-google-maps';
-import { useEffect, useState } from 'react';
+import { Ionicons } from '@expo/vector-icons';
+import { AdvancedMarker, APIProvider, Circle, Map, useMap } from '@vis.gl/react-google-maps';
+import { Fragment, useEffect, useState } from 'react';
 import { View } from 'react-native';
 
 import { Screen, Text } from '@/components';
 import type { MemberLocation } from '@/services/location';
 import { colors } from '@/theme';
+import type { SavedPlace } from '@/types/database';
 import { initials } from '@/utils/avatar';
+import { placeIconName } from '@/utils/placeIcons';
 
 export interface FamilyMapProps {
   members: MemberLocation[];
@@ -13,6 +16,7 @@ export interface FamilyMapProps {
   own?: { latitude: number; longitude: number } | null;
   /** Centraliza o mapa nesse ponto sempre que `key` mudar (ex.: membro selecionado na lista). */
   focus?: { latitude: number; longitude: number; key: number } | null;
+  places?: SavedPlace[];
 }
 
 const apiKey = process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY ?? '';
@@ -78,8 +82,28 @@ function AvatarPin({ member }: { member: MemberLocation }) {
   );
 }
 
+function PlacePin({ place }: { place: SavedPlace }) {
+  return (
+    <div
+      style={{
+        width: 36,
+        height: 36,
+        borderRadius: '50%',
+        border: `2px solid ${colors.neutral[300]}`,
+        boxShadow: '0 2px 6px rgba(0,0,0,0.35)',
+        background: colors.neutral[700],
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+      }}
+    >
+      <Ionicons name={placeIconName(place.icon)} size={16} color={colors.neutral[100]} />
+    </div>
+  );
+}
+
 /** Mapa na web via Google Maps JavaScript API, com avatares dos membros. */
-export default function FamilyMap({ members, initialRegion, own, focus }: FamilyMapProps) {
+export default function FamilyMap({ members, initialRegion, own, focus, places = [] }: FamilyMapProps) {
   if (!apiKey) {
     return (
       <Screen>
@@ -107,6 +131,22 @@ export default function FamilyMap({ members, initialRegion, own, focus }: Family
         >
           <Recenter own={own} />
           <Focus focus={focus} />
+          {places.map((place) => (
+            <Fragment key={place.id}>
+              <AdvancedMarker position={{ lat: place.latitude, lng: place.longitude }} title={place.name}>
+                <PlacePin place={place} />
+              </AdvancedMarker>
+              <Circle
+                center={{ lat: place.latitude, lng: place.longitude }}
+                radius={place.radius}
+                fillColor={colors.neutral[300]}
+                fillOpacity={0.18}
+                strokeColor={colors.neutral[400]}
+                strokeOpacity={0.8}
+                strokeWeight={1}
+              />
+            </Fragment>
+          ))}
           {members.map((member) => (
             <AdvancedMarker
               key={member.user_id}
