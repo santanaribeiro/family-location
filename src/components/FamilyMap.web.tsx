@@ -10,12 +10,9 @@ export interface FamilyMapProps {
   members: MemberLocation[];
   initialRegion: { latitude: number; longitude: number; latitudeDelta: number; longitudeDelta: number };
   own?: { latitude: number; longitude: number } | null;
-  backgroundOn: boolean;
-  onToggleBackground: () => void;
 }
 
 const apiKey = process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY ?? '';
-// AdvancedMarker (avatar customizado) exige um Map ID. DEMO_MAP_ID funciona para desenvolvimento.
 const mapId = process.env.EXPO_PUBLIC_GOOGLE_MAPS_ID || 'DEMO_MAP_ID';
 
 /** Recentraliza o mapa na posição do usuário assim que ela fica disponível. */
