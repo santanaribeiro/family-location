@@ -1,6 +1,7 @@
 import { ActivityIndicator, Pressable, type PressableProps } from 'react-native';
 
 import { Text } from './Text';
+import { colors } from '@/theme';
 
 export type ButtonVariant = 'primary' | 'secondary' | 'ghost';
 export type ButtonSize = 'sm' | 'md' | 'lg';
@@ -15,14 +16,14 @@ const sizeClass: Record<ButtonSize, string> = {
 
 const containerClass: Record<ButtonVariant, string> = {
   primary: 'bg-brand-500 active:bg-brand-600',
-  secondary: 'bg-neutral-100 active:bg-neutral-200 dark:bg-neutral-800 dark:active:bg-neutral-700',
-  ghost: 'bg-transparent active:bg-neutral-100 dark:active:bg-neutral-800',
+  secondary: 'bg-neutral-800 active:bg-neutral-700',
+  ghost: 'bg-transparent active:bg-neutral-800',
 };
 
 const labelClass: Record<ButtonVariant, string> = {
   primary: 'text-white',
-  secondary: 'text-neutral-900 dark:text-neutral-50',
-  ghost: 'text-brand-600 dark:text-brand-400',
+  secondary: 'text-neutral-50',
+  ghost: 'text-brand-400',
 };
 
 export interface ButtonProps extends Omit<PressableProps, 'children'> {
@@ -53,7 +54,7 @@ export function Button({
       {...props}
     >
       {loading ? (
-        <ActivityIndicator color="#FFFFFF" />
+        <ActivityIndicator color={variant === 'primary' ? colors.white : colors.neutral[100]} />
       ) : (
         <Text variant="body" className={`font-semibold ${labelClass[variant]}`}>
           {title}

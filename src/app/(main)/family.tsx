@@ -10,7 +10,14 @@ import { useAuth } from '@/services/auth';
 import { createInvite, leaveFamily, listMyFamilies, type FamilyWithRole } from '@/services/family';
 import { useFamilyStore } from '@/stores/familyStore';
 import { colors } from '@/theme';
+import type { FamilyRole } from '@/types/database';
 import { inviteLink } from '@/utils/invite';
+
+const roleLabel: Record<FamilyRole, string> = {
+  owner: 'Dono',
+  admin: 'Admin',
+  member: 'Membro',
+};
 
 export default function FamilyScreen() {
   const { user } = useAuth();
@@ -70,27 +77,49 @@ export default function FamilyScreen() {
             “Entrar” na aba Mapa.
           </Text>
         ) : (
-          <ScrollView className="flex-1">
-            <View className="gap-sm">
-              {families.map((family) => (
-                <View
-                  key={family.id}
-                  className="flex-row items-center justify-between rounded-lg bg-neutral-800 px-md py-md"
-                >
-                  <View className="flex-1 pr-sm">
-                    <Text variant="body" className="font-semibold">
-                      {family.name}
-                    </Text>
-                    <Text variant="caption">{family.role}</Text>
+          <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
+            <View className="gap-sm pb-lg">
+              {families.map((family) => {
+                const displayName = family.name?.trim() || 'Família sem nome';
+                return (
+                  <View
+                    key={family.id}
+                    className="flex-row items-center gap-md rounded-xl bg-neutral-800 px-md py-md"
+                  >
+                    <View className="h-11 w-11 items-center justify-center rounded-full bg-neutral-700">
+                      <Ionicons name="people" size={20} color={colors.neutral[100]} />
+                    </View>
+
+                    <View className="flex-1 gap-xs">
+                      <Text variant="body" className="font-semibold" numberOfLines={1}>
+                        {displayName}
+                      </Text>
+                      <View className="self-start rounded-full bg-neutral-700 px-sm py-0.5">
+                        <Text variant="caption" className="uppercase">
+                          {roleLabel[family.role]}
+                        </Text>
+                      </View>
+                    </View>
+
+                    <View className="flex-row gap-xs">
+                      <Pressable
+                        onPress={() => shareFamily(family)}
+                        className="h-9 w-9 items-center justify-center rounded-full bg-neutral-700 active:bg-neutral-600"
+                        accessibilityLabel="Compartilhar convite"
+                      >
+                        <Ionicons name="share-social-outline" size={18} color={colors.neutral[100]} />
+                      </Pressable>
+                      <Pressable
+                        onPress={() => confirmLeave(family)}
+                        className="h-9 w-9 items-center justify-center rounded-full bg-neutral-700 active:bg-neutral-600"
+                        accessibilityLabel="Sair da família"
+                      >
+                        <Ionicons name="exit-outline" size={18} color={colors.neutral[400]} />
+                      </Pressable>
+                    </View>
                   </View>
-                  <Pressable onPress={() => shareFamily(family)} className="p-sm" accessibilityLabel="Compartilhar convite">
-                    <Ionicons name="share-social-outline" size={20} color={colors.brand[400]} />
-                  </Pressable>
-                  <Pressable onPress={() => confirmLeave(family)} className="p-sm" accessibilityLabel="Sair da família">
-                    <Ionicons name="exit-outline" size={20} color={colors.neutral[400]} />
-                  </Pressable>
-                </View>
-              ))}
+                );
+              })}
             </View>
           </ScrollView>
         )}

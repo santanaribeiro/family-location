@@ -3,11 +3,11 @@ import { Text as RNText, type TextProps } from 'react-native';
 export type TextVariant = 'title' | 'subtitle' | 'body' | 'muted' | 'caption';
 
 const variantClass: Record<TextVariant, string> = {
-  title: 'text-3xl font-bold text-neutral-900 dark:text-neutral-50',
-  subtitle: 'text-xl font-semibold text-neutral-900 dark:text-neutral-50',
-  body: 'text-base text-neutral-800 dark:text-neutral-100',
-  muted: 'text-sm text-neutral-500 dark:text-neutral-400',
-  caption: 'text-xs text-neutral-500 dark:text-neutral-400',
+  title: 'text-3xl font-bold text-neutral-50',
+  subtitle: 'text-xl font-semibold text-neutral-50',
+  body: 'text-base text-neutral-100',
+  muted: 'text-sm text-neutral-400',
+  caption: 'text-xs text-neutral-400',
 };
 
 export interface AppTextProps extends TextProps {

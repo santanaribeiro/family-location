@@ -176,8 +176,8 @@ export default function MapScreen() {
         index={0}
         snapPoints={['22%', '75%']}
         enablePanDownToClose={false}
-        backgroundStyle={{ backgroundColor: '#20242B' }}
-        handleIndicatorStyle={{ backgroundColor: '#4B515C' }}
+        backgroundStyle={{ backgroundColor: colors.neutral[800] }}
+        handleIndicatorStyle={{ backgroundColor: colors.neutral[600] }}
       >
         <BottomSheetScrollView contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: insets.bottom + 24 }}>
           <Text variant="subtitle" className="mb-sm">

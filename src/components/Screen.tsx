@@ -17,7 +17,7 @@ export function Screen({ children, padded = true, className, style, ...props }: 
   const gutter = padded ? 16 : 0;
   return (
     <View
-      className={`flex-1 bg-neutral-50 dark:bg-neutral-900 ${padded ? 'px-lg' : ''} ${className ?? ''}`}
+      className={`flex-1 bg-neutral-900 ${padded ? 'px-lg' : ''} ${className ?? ''}`}
       style={[{ paddingTop: insets.top + gutter, paddingBottom: insets.bottom + gutter }, style]}
       {...props}
     >

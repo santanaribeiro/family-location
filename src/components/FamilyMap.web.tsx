@@ -4,6 +4,7 @@ import { View } from 'react-native';
 
 import { Screen, Text } from '@/components';
 import type { MemberLocation } from '@/services/location';
+import { colors } from '@/theme';
 import { initials } from '@/utils/avatar';
 
 export interface FamilyMapProps {
@@ -37,10 +38,10 @@ function AvatarPin({ member }: { member: MemberLocation }) {
         width: 44,
         height: 44,
         borderRadius: '50%',
-        border: '2px solid #ffffff',
+        border: `2px solid ${colors.neutral[400]}`,
         overflow: 'hidden',
         boxShadow: '0 2px 6px rgba(0,0,0,0.35)',
-        background: '#208AEF',
+        background: colors.brand[500],
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
@@ -55,7 +56,7 @@ function AvatarPin({ member }: { member: MemberLocation }) {
           onError={() => setFailed(true)}
         />
       ) : (
-        <span style={{ color: '#fff', fontWeight: 700, fontSize: 14 }}>
+        <span style={{ color: colors.neutral[100], fontWeight: 700, fontSize: 14 }}>
           {initials(member.user?.name ?? member.user?.email)}
         </span>
       )}

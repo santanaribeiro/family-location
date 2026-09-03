@@ -12,8 +12,12 @@ export default function MainTabsLayout() {
     <Tabs
       screenOptions={{
         headerShown: false,
-        tabBarActiveTintColor: colors.brand[500],
+        tabBarActiveTintColor: colors.neutral[100],
         tabBarInactiveTintColor: colors.neutral[400],
+        tabBarStyle: {
+          backgroundColor: colors.neutral[900],
+          borderTopColor: colors.neutral[700],
+        },
       }}
     >
       <Tabs.Screen

@@ -29,7 +29,7 @@ function AvatarMarker({ member }: { member: MemberLocation }) {
       tracksViewChanges={!ready}
       anchor={{ x: 0.5, y: 0.5 }}
     >
-      <View className="h-12 w-12 items-center justify-center overflow-hidden rounded-full border-2 border-white bg-brand-500">
+      <View className="h-12 w-12 items-center justify-center overflow-hidden rounded-full border-2 border-neutral-400 bg-brand-500">
         {showImage ? (
           <Image
             source={{ uri: url }}

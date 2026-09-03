@@ -24,22 +24,20 @@ export function FamilySelector({ families, activeId, onSelect }: FamilySelectorP
       <Pressable
         onPress={() => setOpen(true)}
         style={shadows.sm}
-        className="flex-row items-center gap-sm self-start rounded-full border border-neutral-200 bg-white px-lg py-sm dark:border-neutral-700 dark:bg-neutral-800"
+        className="flex-row items-center gap-sm self-start rounded-full border border-neutral-700 bg-neutral-800 px-lg py-sm"
       >
-        <Ionicons name="people" size={16} color={colors.brand[500]} />
-        <Text className="font-semibold text-neutral-900 dark:text-neutral-50">
-          {active?.name ?? 'Selecionar família'}
-        </Text>
-        <Ionicons name="chevron-down" size={16} color={colors.neutral[500]} />
+        <Ionicons name="people" size={16} color={colors.brand[400]} />
+        <Text className="font-semibold text-neutral-50">{active?.name ?? 'Selecionar família'}</Text>
+        <Ionicons name="chevron-down" size={16} color={colors.neutral[400]} />
       </Pressable>
 
       <Modal visible={open} transparent animationType="fade" onRequestClose={() => setOpen(false)}>
         <Pressable
           onPress={() => setOpen(false)}
           className="flex-1 justify-center px-xl"
-          style={{ backgroundColor: 'rgba(0,0,0,0.45)' }}
+          style={{ backgroundColor: 'rgba(0,0,0,0.55)' }}
         >
-          <Pressable onPress={() => {}} style={shadows.lg} className="rounded-xl bg-white p-sm dark:bg-neutral-800">
+          <Pressable onPress={() => {}} style={shadows.lg} className="rounded-xl bg-neutral-800 p-sm">
             <Text variant="subtitle" className="px-sm py-sm">
               Suas famílias
             </Text>
@@ -54,19 +52,13 @@ export function FamilySelector({ families, activeId, onSelect }: FamilySelectorP
                       setOpen(false);
                     }}
                     className={`flex-row items-center justify-between rounded-lg px-md py-md ${
-                      isActive ? 'bg-neutral-100 dark:bg-neutral-700' : ''
+                      isActive ? 'bg-neutral-700' : ''
                     }`}
                   >
-                    <Text
-                      className={
-                        isActive
-                          ? 'font-semibold text-brand-600 dark:text-brand-400'
-                          : 'text-neutral-800 dark:text-neutral-100'
-                      }
-                    >
+                    <Text className={isActive ? 'font-semibold text-brand-400' : 'text-neutral-100'}>
                       {family.name}
                     </Text>
-                    {isActive ? <Ionicons name="checkmark" size={18} color={colors.brand[500]} /> : null}
+                    {isActive ? <Ionicons name="checkmark" size={18} color={colors.brand[400]} /> : null}
                   </Pressable>
                 );
               })}

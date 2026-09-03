@@ -1,28 +1,26 @@
 /** @type {import('tailwindcss').Config} */
 
-// Tokens do design system espelhados de `src/theme/*`.
-// Estes valores são usados via className (NativeWind); os arquivos em src/theme/
-// expõem os MESMOS valores para estilos imperativos. Mantenha os dois lados em sincronia.
+// Paleta em escala de cinza (dark-only). 5 tons:
+//  #111111 fundo · #2E2E2E cards · #4A4A4A bordas/botões · #7A7A7A ícones/texto 2º · #BFBFBF texto.
 const colors = {
   transparent: 'transparent',
-  white: '#FFFFFF',
-  black: '#000000',
+  white: '#BFBFBF',
+  black: '#111111',
   brand: {
-    50: '#EAF3FE', 100: '#D5E7FD', 200: '#ABCFFB', 300: '#80B6F8', 400: '#4E9DF3',
-    500: '#208AEF', 600: '#1670CC', 700: '#1258A0', 800: '#0E4176', 900: '#0A2C50',
+    50: '#2E2E2E', 100: '#2E2E2E', 200: '#4A4A4A', 300: '#7A7A7A', 400: '#7A7A7A',
+    500: '#4A4A4A', 600: '#2E2E2E', 700: '#4A4A4A', 800: '#2E2E2E', 900: '#111111',
   },
   neutral: {
-    0: '#FFFFFF', 50: '#F7F8FA', 100: '#EDEFF3', 200: '#DDE1E8', 300: '#C2C8D2',
-    400: '#98A0AE', 500: '#6B7280', 600: '#4B515C', 700: '#343A43', 800: '#20242B', 900: '#12151A',
+    0: '#BFBFBF', 50: '#BFBFBF', 100: '#BFBFBF', 200: '#4A4A4A', 300: '#7A7A7A',
+    400: '#7A7A7A', 500: '#7A7A7A', 600: '#4A4A4A', 700: '#4A4A4A', 800: '#2E2E2E', 900: '#111111',
   },
-  success: { 500: '#1FA971', 600: '#178A5C' },
-  warning: { 500: '#E4A20B', 600: '#B98209' },
-  danger: { 500: '#E5484D', 600: '#C13438' },
+  success: { 500: '#7A7A7A', 600: '#4A4A4A' },
+  warning: { 500: '#7A7A7A', 600: '#4A4A4A' },
+  danger: { 500: '#7A7A7A', 600: '#4A4A4A' },
 };
 
 module.exports = {
   content: ['./src/**/*.{js,jsx,ts,tsx}'],
-  darkMode: 'class',
   presets: [require('nativewind/preset')],
   theme: {
     extend: {
