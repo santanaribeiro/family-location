@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
-import { Pressable, ScrollView, View } from 'react-native';
+import { ActivityIndicator, Pressable, ScrollView, View } from 'react-native';
 
 import { Button, Screen, Text } from '@/components';
 import { ActivityModal } from '@/components/ActivityModal';
@@ -27,11 +27,13 @@ export default function FamilyScreen() {
   const [createOpen, setCreateOpen] = useState(false);
   const [inviteFor, setInviteFor] = useState<FamilyWithRole | null>(null);
   const [activityFor, setActivityFor] = useState<FamilyWithRole | null>(null);
+  const [loading, setLoading] = useState(true);
 
   const load = useCallback(() => {
     listMyFamilies()
       .then(setFamilies)
-      .catch(() => {});
+      .catch(() => {})
+      .finally(() => setLoading(false));
   }, []);
 
   useFocusEffect(useCallback(() => load(), [load]));
@@ -57,7 +59,11 @@ export default function FamilyScreen() {
           <Button title="+ Família" size="sm" onPress={() => setCreateOpen(true)} />
         </View>
 
-        {families.length === 0 ? (
+        {loading ? (
+          <View className="items-center py-lg">
+            <ActivityIndicator color={colors.neutral[400]} />
+          </View>
+        ) : families.length === 0 ? (
           <Text variant="muted">
             Você ainda não participa de nenhuma família. Crie uma em “+ Família”, ou entre em uma pelo botão
             “Entrar” na aba Mapa.

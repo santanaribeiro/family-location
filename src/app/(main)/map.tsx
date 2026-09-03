@@ -4,7 +4,7 @@ import Constants, { ExecutionEnvironment } from 'expo-constants';
 import type { LocationSubscription } from 'expo-location';
 import { useFocusEffect } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Platform, Pressable, View } from 'react-native';
+import { ActivityIndicator, Platform, Pressable, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Button, Screen, Text } from '@/components';
@@ -69,6 +69,8 @@ export default function MapScreen() {
   const [createPlaceAt, setCreatePlaceAt] = useState<{ latitude: number; longitude: number } | null>(null);
   const [chatOpen, setChatOpen] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [familiesLoading, setFamiliesLoading] = useState(true);
+  const [membersLoading, setMembersLoading] = useState(true);
   const subscriptionRef = useRef<LocationSubscription | null>(null);
   const bottomSheetRef = useRef<BottomSheet>(null);
   const lastReadAt = useChatStore((s) => (activeFamilyId ? s.lastRead[activeFamilyId] : undefined));
@@ -81,7 +83,8 @@ export default function MapScreen() {
           setActiveFamily(list[0].id);
         }
       })
-      .catch(() => {});
+      .catch(() => {})
+      .finally(() => setFamiliesLoading(false));
   }, [activeFamilyId, setActiveFamily]);
 
   // Recarrega famílias ao focar (ex.: família criada em outra aba aparece sozinha).
@@ -92,9 +95,12 @@ export default function MapScreen() {
       setAllMembers([]);
       setLocated([]);
       setDeviceStatuses([]);
+      setMembersLoading(false);
       return;
     }
     let cancelled = false;
+    let firstLoad = true;
+    setMembersLoading(true);
     const refresh = async () => {
       try {
         const membersList = await listMembers(activeFamilyId);
@@ -107,6 +113,11 @@ export default function MapScreen() {
         setDeviceStatuses(statuses);
       } catch {
         // Falha silenciosa — o próximo refresh (realtime) tenta de novo.
+      } finally {
+        if (!cancelled && firstLoad) {
+          firstLoad = false;
+          setMembersLoading(false);
+        }
       }
     };
     refresh();
@@ -238,6 +249,18 @@ export default function MapScreen() {
     return <FallbackMessage>O mapa e o GPS rodam no dev build (EAS) ou no navegador — não no Expo Go.</FallbackMessage>;
   }
 
+  // Só na primeira carga: evita mostrar "crie ou selecione uma família" um instante
+  // antes da família ativa (persistida) terminar de carregar.
+  if (familiesLoading) {
+    return (
+      <Screen>
+        <View className="flex-1 items-center justify-center">
+          <ActivityIndicator color={colors.neutral[400]} />
+        </View>
+      </Screen>
+    );
+  }
+
   if (!activeFamilyId) {
     return <FallbackMessage>Crie ou selecione uma família na aba Família para ver o mapa.</FallbackMessage>;
   }
@@ -310,7 +333,11 @@ export default function MapScreen() {
             Família ({listRows.length})
           </Text>
 
-          {listRows.length === 0 ? (
+          {membersLoading ? (
+            <View className="items-center py-lg">
+              <ActivityIndicator color={colors.neutral[400]} />
+            </View>
+          ) : listRows.length === 0 ? (
             <Text variant="muted">Ninguém na família ainda. Convide alguém na aba Família.</Text>
           ) : (
             listRows.map((row) => (

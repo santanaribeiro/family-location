@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useCallback, useEffect, useState } from 'react';
-import { Pressable, ScrollView, View } from 'react-native';
+import { ActivityIndicator, Pressable, ScrollView, View } from 'react-native';
 
 import { Button, Screen, Text } from '@/components';
 import { PlaceFormModal } from '@/components/PlaceFormModal';
@@ -14,21 +14,25 @@ export default function PlacesScreen() {
   const { activeFamilyId } = useFamilyStore();
   const [places, setPlaces] = useState<SavedPlace[]>([]);
   const [editing, setEditing] = useState<SavedPlace | null | undefined>(undefined);
+  const [loading, setLoading] = useState(true);
 
   const load = useCallback(() => {
     if (!activeFamilyId) {
       setPlaces([]);
+      setLoading(false);
       return;
     }
     listPlaces(activeFamilyId)
       .then(setPlaces)
-      .catch(() => {});
+      .catch(() => {})
+      .finally(() => setLoading(false));
   }, [activeFamilyId]);
 
   // Um único efeito de vida do componente (não por foco): evita assinar o canal
   // Realtime duas vezes em sequência rápida, o que já causou o canal a ser
   // reaberto antes do anterior terminar de fechar.
   useEffect(() => {
+    setLoading(true);
     load();
     if (!activeFamilyId) return;
     const unsubscribe = subscribePlaces(load);
@@ -56,7 +60,11 @@ export default function PlacesScreen() {
           <Button title="+ Local" size="sm" onPress={() => setEditing(null)} />
         </View>
 
-        {places.length === 0 ? (
+        {loading ? (
+          <View className="items-center py-lg">
+            <ActivityIndicator color={colors.neutral[400]} />
+          </View>
+        ) : places.length === 0 ? (
           <Text variant="muted">
             Nenhum local salvo ainda. Toque em “+ Local” para adicionar casa, trabalho, escola, etc.
           </Text>
