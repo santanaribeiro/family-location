@@ -8,6 +8,7 @@ import { Platform, Pressable, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Button, Screen, Text } from '@/components';
+import { ChatModal } from '@/components/ChatModal';
 import { FamilySelector } from '@/components/FamilySelector';
 import FamilyMap from '@/components/FamilyMap';
 import { JoinFamilyButton } from '@/components/JoinFamilyButton';
@@ -15,6 +16,7 @@ import { MemberRow } from '@/components/MemberRow';
 import { PlaceFormModal } from '@/components/PlaceFormModal';
 import { useAuth } from '@/services/auth';
 import { getDeviceStatuses, subscribeDeviceStatus, upsertBatteryStatus, watchBattery } from '@/services/battery';
+import { countUnread, subscribeMessages } from '@/services/chat';
 import { listMembers, listMyFamilies, type FamilyWithRole, type MemberWithUser } from '@/services/family';
 import {
   getCurrent,
@@ -25,6 +27,7 @@ import {
 } from '@/services/location';
 import { isBackgroundActive, startBackgroundUpdates } from '@/services/location/background';
 import { listPlaces, subscribePlaces } from '@/services/places';
+import { useChatStore } from '@/stores/chatStore';
 import { useFamilyStore } from '@/stores/familyStore';
 import { colors } from '@/theme';
 import type { SavedPlace, UserDeviceStatus } from '@/types/database';
@@ -64,8 +67,11 @@ export default function MapScreen() {
     null,
   );
   const [createPlaceAt, setCreatePlaceAt] = useState<{ latitude: number; longitude: number } | null>(null);
+  const [chatOpen, setChatOpen] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
   const subscriptionRef = useRef<LocationSubscription | null>(null);
   const bottomSheetRef = useRef<BottomSheet>(null);
+  const lastReadAt = useChatStore((s) => (activeFamilyId ? s.lastRead[activeFamilyId] : undefined));
 
   const reloadFamilies = useCallback(() => {
     listMyFamilies()
@@ -133,6 +139,27 @@ export default function MapScreen() {
       unsubscribe();
     };
   }, [activeFamilyId]);
+
+  useEffect(() => {
+    if (!activeFamilyId || !user) {
+      setUnreadCount(0);
+      return;
+    }
+    let cancelled = false;
+    const refresh = () => {
+      countUnread(activeFamilyId, lastReadAt ?? null, user.id)
+        .then((n) => {
+          if (!cancelled) setUnreadCount(n);
+        })
+        .catch(() => {});
+    };
+    refresh();
+    const unsubscribe = subscribeMessages(activeFamilyId, refresh);
+    return () => {
+      cancelled = true;
+      unsubscribe();
+    };
+  }, [activeFamilyId, user, lastReadAt]);
 
   useEffect(() => {
     if (isExpoGo) return;
@@ -234,11 +261,38 @@ export default function MapScreen() {
         onPickLocation={setCreatePlaceAt}
       />
 
-      {/* Topo: seletor de família + botão de entrar */}
+      {/* Topo: seletor de família + chat + botão de entrar */}
       <View className="absolute inset-x-0" style={{ top: insets.top + 8 }} pointerEvents="box-none">
         <View className="flex-row items-center justify-between gap-sm px-md">
           <FamilySelector families={families} activeId={activeFamilyId} onSelect={setActiveFamily} />
-          <JoinFamilyButton onJoined={reloadFamilies} />
+          <View className="flex-row items-center gap-sm">
+            <View>
+              <Pressable
+                onPress={() => setChatOpen(true)}
+                className="h-10 w-10 items-center justify-center rounded-full border border-neutral-700 bg-neutral-800"
+                accessibilityLabel="Chat da família"
+              >
+                <Ionicons name="chatbubble-outline" size={18} color={colors.neutral[100]} />
+              </Pressable>
+              {unreadCount > 0 ? (
+                <View
+                  className="absolute items-center justify-center rounded-full px-1"
+                  style={{
+                    top: -6,
+                    right: -6,
+                    minWidth: 17,
+                    height: 17,
+                    backgroundColor: colors.neutral[100],
+                  }}
+                >
+                  <Text style={{ color: colors.neutral[900], fontSize: 10, fontWeight: '700' }}>
+                    {unreadCount > 99 ? '99+' : unreadCount}
+                  </Text>
+                </View>
+              ) : null}
+            </View>
+            <JoinFamilyButton onJoined={reloadFamilies} />
+          </View>
         </View>
       </View>
 
@@ -293,6 +347,18 @@ export default function MapScreen() {
         initialCoordinate={createPlaceAt}
         onClose={() => setCreatePlaceAt(null)}
         onSaved={() => setCreatePlaceAt(null)}
+      />
+
+      <ChatModal
+        visible={chatOpen}
+        familyId={activeFamilyId}
+        familyName={families.find((f) => f.id === activeFamilyId)?.name?.trim() || 'Família sem nome'}
+        memberCount={listRows.length}
+        canModerate={
+          families.find((f) => f.id === activeFamilyId)?.role === 'owner' ||
+          families.find((f) => f.id === activeFamilyId)?.role === 'admin'
+        }
+        onClose={() => setChatOpen(false)}
       />
     </View>
   );
