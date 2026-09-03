@@ -4,7 +4,7 @@ import Constants, { ExecutionEnvironment } from 'expo-constants';
 import type { LocationSubscription } from 'expo-location';
 import { useFocusEffect } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Platform, View } from 'react-native';
+import { Platform, Pressable, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Button, Screen, Text } from '@/components';
@@ -52,7 +52,11 @@ export default function MapScreen() {
   const [located, setLocated] = useState<MemberLocation[]>([]);
   const [own, setOwn] = useState<{ latitude: number; longitude: number } | null>(null);
   const [backgroundOn, setBackgroundOn] = useState(false);
+  const [focusTarget, setFocusTarget] = useState<{ latitude: number; longitude: number; key: number } | null>(
+    null,
+  );
   const subscriptionRef = useRef<LocationSubscription | null>(null);
+  const bottomSheetRef = useRef<BottomSheet>(null);
 
   const reloadFamilies = useCallback(() => {
     listMyFamilies()
@@ -125,10 +129,21 @@ export default function MapScreen() {
           name: member.user?.name ?? member.user?.email ?? 'Membro',
           avatarUrl: member.user?.avatar_url ?? null,
           recordedAt: location?.recorded_at ?? null,
+          latitude: location?.latitude ?? null,
+          longitude: location?.longitude ?? null,
         };
       }),
     [allMembers, located],
   );
+
+  function focusOnMember(row: (typeof listRows)[number]) {
+    if (row.latitude == null || row.longitude == null) {
+      notify('Localização', `Ainda não temos a localização de ${row.name}.`);
+      return;
+    }
+    setFocusTarget({ latitude: row.latitude, longitude: row.longitude, key: Date.now() });
+    bottomSheetRef.current?.snapToIndex(0);
+  }
 
   async function enableBackground() {
     try {
@@ -162,7 +177,7 @@ export default function MapScreen() {
 
   return (
     <View className="flex-1">
-      <FamilyMap members={located} initialRegion={initialRegion} own={own} />
+      <FamilyMap members={located} initialRegion={initialRegion} own={own} focus={focusTarget} />
 
       {/* Topo: seletor de família + botão de entrar */}
       <View className="absolute inset-x-0" style={{ top: insets.top + 8 }} pointerEvents="box-none">
@@ -174,6 +189,7 @@ export default function MapScreen() {
 
       {/* Bottom sheet arrastável com a lista de membros */}
       <BottomSheet
+        ref={bottomSheetRef}
         index={0}
         snapPoints={['22%', '75%']}
         enablePanDownToClose={false}
@@ -189,7 +205,9 @@ export default function MapScreen() {
             <Text variant="muted">Ninguém na família ainda. Convide alguém na aba Família.</Text>
           ) : (
             listRows.map((row) => (
-              <MemberRow key={row.key} name={row.name} avatarUrl={row.avatarUrl} recordedAt={row.recordedAt} />
+              <Pressable key={row.key} onPress={() => focusOnMember(row)}>
+                <MemberRow name={row.name} avatarUrl={row.avatarUrl} recordedAt={row.recordedAt} />
+              </Pressable>
             ))
           )}
 

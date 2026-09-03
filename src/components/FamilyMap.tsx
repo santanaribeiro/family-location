@@ -11,6 +11,8 @@ export interface FamilyMapProps {
   members: MemberLocation[];
   initialRegion: { latitude: number; longitude: number; latitudeDelta: number; longitudeDelta: number };
   own?: { latitude: number; longitude: number } | null;
+  /** Centraliza o mapa nesse ponto sempre que `key` mudar (ex.: membro selecionado na lista). */
+  focus?: { latitude: number; longitude: number; key: number } | null;
 }
 
 /** Marcador com o avatar (foto) do membro; cai para iniciais se não houver foto ou ela falhar. */
@@ -51,7 +53,7 @@ function AvatarMarker({ member }: { member: MemberLocation }) {
 }
 
 /** Mapa nativo (react-native-maps) — usado no dev build. */
-export default function FamilyMap({ members, initialRegion, own }: FamilyMapProps) {
+export default function FamilyMap({ members, initialRegion, own, focus }: FamilyMapProps) {
   const mapRef = useRef<MapView>(null);
 
   useEffect(() => {
@@ -62,6 +64,15 @@ export default function FamilyMap({ members, initialRegion, own }: FamilyMapProp
       );
     }
   }, [own]);
+
+  useEffect(() => {
+    if (focus) {
+      mapRef.current?.animateToRegion(
+        { latitude: focus.latitude, longitude: focus.longitude, latitudeDelta: 0.01, longitudeDelta: 0.01 },
+        600,
+      );
+    }
+  }, [focus]);
 
   return (
     <MapView ref={mapRef} style={{ flex: 1 }} initialRegion={initialRegion} showsUserLocation showsMyLocationButton>

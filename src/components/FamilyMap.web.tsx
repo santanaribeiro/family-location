@@ -11,6 +11,8 @@ export interface FamilyMapProps {
   members: MemberLocation[];
   initialRegion: { latitude: number; longitude: number; latitudeDelta: number; longitudeDelta: number };
   own?: { latitude: number; longitude: number } | null;
+  /** Centraliza o mapa nesse ponto sempre que `key` mudar (ex.: membro selecionado na lista). */
+  focus?: { latitude: number; longitude: number; key: number } | null;
 }
 
 const apiKey = process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY ?? '';
@@ -25,6 +27,18 @@ function Recenter({ own }: { own?: { latitude: number; longitude: number } | nul
       map.setZoom(15);
     }
   }, [map, own]);
+  return null;
+}
+
+/** Centraliza o mapa no ponto focado sempre que `key` mudar (ex.: membro selecionado). */
+function Focus({ focus }: { focus?: { latitude: number; longitude: number; key: number } | null }) {
+  const map = useMap();
+  useEffect(() => {
+    if (map && focus) {
+      map.panTo({ lat: focus.latitude, lng: focus.longitude });
+      map.setZoom(16);
+    }
+  }, [map, focus]);
   return null;
 }
 
@@ -65,7 +79,7 @@ function AvatarPin({ member }: { member: MemberLocation }) {
 }
 
 /** Mapa na web via Google Maps JavaScript API, com avatares dos membros. */
-export default function FamilyMap({ members, initialRegion, own }: FamilyMapProps) {
+export default function FamilyMap({ members, initialRegion, own, focus }: FamilyMapProps) {
   if (!apiKey) {
     return (
       <Screen>
@@ -92,6 +106,7 @@ export default function FamilyMap({ members, initialRegion, own }: FamilyMapProp
           gestureHandling="greedy"
         >
           <Recenter own={own} />
+          <Focus focus={focus} />
           {members.map((member) => (
             <AdvancedMarker
               key={member.user_id}

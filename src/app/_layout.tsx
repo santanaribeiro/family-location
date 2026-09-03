@@ -1,4 +1,10 @@
 import '@/global.css';
+// Registra a task de localização em segundo plano (TaskManager.defineTask) o mais cedo
+// possível. Precisa rodar aqui — na raiz, sempre carregada — e não só quando a tela do
+// mapa é aberta: no boot "headless" (app fechado, o SO acorda o JS só pra rodar a task),
+// nenhuma navegação acontece, e uma tela de rota carregada sob demanda (lazy) nunca seria
+// importada, deixando a task sem handler registrado.
+import '@/services/location/background';
 
 import { Stack, useRouter, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
