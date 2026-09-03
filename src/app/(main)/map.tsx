@@ -15,6 +15,7 @@ import { HistoryModal } from '@/components/HistoryModal';
 import { JoinFamilyButton } from '@/components/JoinFamilyButton';
 import { MemberRow } from '@/components/MemberRow';
 import { PlaceFormModal } from '@/components/PlaceFormModal';
+import { PresenceTab } from '@/components/PresenceTab';
 import { useAuth } from '@/services/auth';
 import { getDeviceStatuses, subscribeDeviceStatus, upsertBatteryStatus, watchBattery } from '@/services/battery';
 import { countUnread, subscribeMessages } from '@/services/chat';
@@ -71,6 +72,7 @@ export default function MapScreen() {
   const [chatOpen, setChatOpen] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
   const [historyFor, setHistoryFor] = useState<{ userId: string; name: string } | null>(null);
+  const [sheetTab, setSheetTab] = useState<'familia' | 'presenca'>('familia');
   const [familiesLoading, setFamiliesLoading] = useState(true);
   const [membersLoading, setMembersLoading] = useState(true);
   const subscriptionRef = useRef<LocationSubscription | null>(null);
@@ -331,43 +333,64 @@ export default function MapScreen() {
         handleIndicatorStyle={{ backgroundColor: colors.neutral[600] }}
       >
         <BottomSheetScrollView contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: insets.bottom + 24 }}>
-          <Text variant="subtitle" className="mb-sm">
-            Família ({listRows.length})
-          </Text>
+          <View className="mb-md flex-row gap-xs rounded-full bg-neutral-900 p-1">
+            <Pressable
+              onPress={() => setSheetTab('familia')}
+              className={`flex-1 items-center rounded-full py-sm ${sheetTab === 'familia' ? 'bg-neutral-700' : ''}`}
+            >
+              <Text className="font-semibold">Família</Text>
+            </Pressable>
+            <Pressable
+              onPress={() => setSheetTab('presenca')}
+              className={`flex-1 items-center rounded-full py-sm ${sheetTab === 'presenca' ? 'bg-neutral-700' : ''}`}
+            >
+              <Text className="font-semibold">Presença</Text>
+            </Pressable>
+          </View>
 
-          {membersLoading ? (
-            <View className="items-center py-lg">
-              <ActivityIndicator color={colors.neutral[400]} />
-            </View>
-          ) : listRows.length === 0 ? (
-            <Text variant="muted">Ninguém na família ainda. Convide alguém na aba Família.</Text>
+          {sheetTab === 'presenca' ? (
+            <PresenceTab familyId={activeFamilyId} selfId={user?.id ?? ''} />
           ) : (
-            listRows.map((row) => (
-              <Pressable key={row.key} onPress={() => focusOnMember(row)}>
-                <MemberRow
-                  name={row.name}
-                  avatarUrl={row.avatarUrl}
-                  recordedAt={row.recordedAt}
-                  batteryLevel={row.batteryLevel}
-                  batteryState={row.batteryState}
-                  onHistoryPress={() => setHistoryFor({ userId: row.key, name: row.name })}
-                />
-              </Pressable>
-            ))
-          )}
+            <>
+              <Text variant="subtitle" className="mb-sm">
+                Família ({listRows.length})
+              </Text>
 
-          {supportsBackground ? (
-            <View className="mt-md">
-              {backgroundOn ? (
-                <View className="flex-row items-center gap-sm rounded-lg bg-neutral-800 px-md py-md">
-                  <Ionicons name="location" size={18} color={colors.success[500]} />
-                  <Text variant="muted">Compartilhando sua localização o tempo todo.</Text>
+              {membersLoading ? (
+                <View className="items-center py-lg">
+                  <ActivityIndicator color={colors.neutral[400]} />
                 </View>
+              ) : listRows.length === 0 ? (
+                <Text variant="muted">Ninguém na família ainda. Convide alguém na aba Família.</Text>
               ) : (
-                <Button title="Compartilhar em 2º plano" onPress={enableBackground} />
+                listRows.map((row) => (
+                  <Pressable key={row.key} onPress={() => focusOnMember(row)}>
+                    <MemberRow
+                      name={row.name}
+                      avatarUrl={row.avatarUrl}
+                      recordedAt={row.recordedAt}
+                      batteryLevel={row.batteryLevel}
+                      batteryState={row.batteryState}
+                      onHistoryPress={() => setHistoryFor({ userId: row.key, name: row.name })}
+                    />
+                  </Pressable>
+                ))
               )}
-            </View>
-          ) : null}
+
+              {supportsBackground ? (
+                <View className="mt-md">
+                  {backgroundOn ? (
+                    <View className="flex-row items-center gap-sm rounded-lg bg-neutral-800 px-md py-md">
+                      <Ionicons name="location" size={18} color={colors.success[500]} />
+                      <Text variant="muted">Compartilhando sua localização o tempo todo.</Text>
+                    </View>
+                  ) : (
+                    <Button title="Compartilhar em 2º plano" onPress={enableBackground} />
+                  )}
+                </View>
+              ) : null}
+            </>
+          )}
         </BottomSheetScrollView>
       </BottomSheet>
 
