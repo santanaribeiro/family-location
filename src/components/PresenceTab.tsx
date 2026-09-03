@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, View } from 'react-native';
+import { ActivityIndicator, Pressable, View } from 'react-native';
 
 import { Avatar, Button, Text } from '@/components';
 import { getCurrentPlaces, listPlaceEvents, subscribePresence, type CurrentPlace, type PlaceEventRow } from '@/services/presence';
@@ -11,6 +11,7 @@ import { timeAgo } from '@/utils/time';
 interface PresenceTabProps {
   familyId: string;
   selfId: string;
+  onOpenDigest?: () => void;
 }
 
 function namesJoined(names: string[]): string {
@@ -40,7 +41,7 @@ function describeEvent(e: PlaceEventRow, selfId: string): string {
 }
 
 /** Conteúdo da aba "Presença" da bottom sheet do mapa: card "Agora" + feed de chegadas/saídas. */
-export function PresenceTab({ familyId, selfId }: PresenceTabProps) {
+export function PresenceTab({ familyId, selfId, onOpenDigest }: PresenceTabProps) {
   const [current, setCurrent] = useState<CurrentPlace[]>([]);
   const [events, setEvents] = useState<PlaceEventRow[]>([]);
   const [cursor, setCursor] = useState<string | null>(null);
@@ -103,6 +104,13 @@ export function PresenceTab({ familyId, selfId }: PresenceTabProps) {
 
   return (
     <View className="gap-md">
+      {onOpenDigest ? (
+        <Pressable onPress={onOpenDigest} className="flex-row items-center gap-xs self-end">
+          <Ionicons name="stats-chart-outline" size={14} color={colors.neutral[400]} />
+          <Text variant="muted">Resumo</Text>
+        </Pressable>
+      ) : null}
+
       {groupedByPlace.size > 0 ? (
         <View className="gap-xs">
           <Text variant="caption">AGORA</Text>

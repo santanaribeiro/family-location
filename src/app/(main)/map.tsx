@@ -9,6 +9,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Button, Screen, Text } from '@/components';
 import { ChatModal } from '@/components/ChatModal';
+import { DigestModal } from '@/components/DigestModal';
 import { FamilySelector } from '@/components/FamilySelector';
 import FamilyMap from '@/components/FamilyMap';
 import { HistoryModal } from '@/components/HistoryModal';
@@ -73,6 +74,7 @@ export default function MapScreen() {
   const [unreadCount, setUnreadCount] = useState(0);
   const [historyFor, setHistoryFor] = useState<{ userId: string; name: string } | null>(null);
   const [sheetTab, setSheetTab] = useState<'familia' | 'presenca'>('familia');
+  const [digestOpen, setDigestOpen] = useState(false);
   const [familiesLoading, setFamiliesLoading] = useState(true);
   const [membersLoading, setMembersLoading] = useState(true);
   const subscriptionRef = useRef<LocationSubscription | null>(null);
@@ -349,7 +351,11 @@ export default function MapScreen() {
           </View>
 
           {sheetTab === 'presenca' ? (
-            <PresenceTab familyId={activeFamilyId} selfId={user?.id ?? ''} />
+            <PresenceTab
+              familyId={activeFamilyId}
+              selfId={user?.id ?? ''}
+              onOpenDigest={() => setDigestOpen(true)}
+            />
           ) : (
             <>
               <Text variant="subtitle" className="mb-sm">
@@ -419,6 +425,13 @@ export default function MapScreen() {
         userId={historyFor?.userId ?? ''}
         userName={historyFor?.name ?? ''}
         onClose={() => setHistoryFor(null)}
+      />
+
+      <DigestModal
+        visible={digestOpen}
+        familyId={activeFamilyId}
+        selfId={user?.id ?? ''}
+        onClose={() => setDigestOpen(false)}
       />
     </View>
   );
