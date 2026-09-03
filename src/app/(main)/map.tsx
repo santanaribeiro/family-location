@@ -1,3 +1,4 @@
+import { Ionicons } from '@expo/vector-icons';
 import BottomSheet, { BottomSheetScrollView } from '@gorhom/bottom-sheet';
 import Constants, { ExecutionEnvironment } from 'expo-constants';
 import type { LocationSubscription } from 'expo-location';
@@ -18,10 +19,12 @@ import {
   watchAndSync,
   type MemberLocation,
 } from '@/services/location';
-import { startBackgroundUpdates, stopBackgroundUpdates } from '@/services/location/background';
+import { isBackgroundActive, startBackgroundUpdates } from '@/services/location/background';
 import { useFamilyStore } from '@/stores/familyStore';
+import { colors } from '@/theme';
 
 const isExpoGo = Constants.executionEnvironment === ExecutionEnvironment.StoreClient;
+const supportsBackground = Platform.OS !== 'web' && !isExpoGo;
 
 function FallbackMessage({ children }: { children: string }) {
   return (
@@ -50,7 +53,7 @@ export default function MapScreen() {
   const [backgroundOn, setBackgroundOn] = useState(false);
   const subscriptionRef = useRef<LocationSubscription | null>(null);
 
-  // Recarrega a lista de famílias sempre que a tela do mapa ganha foco
+  // Recarrega as famílias sempre que a tela do mapa ganha foco
   // (assim uma família recém-criada em outra aba aparece automaticamente).
   useFocusEffect(
     useCallback(() => {
@@ -113,6 +116,12 @@ export default function MapScreen() {
     };
   }, []);
 
+  // Reflete se o compartilhamento em 2º plano já está ativo (persistente).
+  useEffect(() => {
+    if (!supportsBackground) return;
+    isBackgroundActive().then(setBackgroundOn).catch(() => {});
+  }, []);
+
   const listRows = useMemo(
     () =>
       allMembers.map((member) => {
@@ -127,16 +136,18 @@ export default function MapScreen() {
     [allMembers, located],
   );
 
-  async function toggleBackground() {
+  async function enableBackground() {
     try {
-      if (backgroundOn) {
-        await stopBackgroundUpdates();
-        setBackgroundOn(false);
-      } else {
-        setBackgroundOn(await startBackgroundUpdates());
+      const ok = await startBackgroundUpdates();
+      setBackgroundOn(ok);
+      if (!ok) {
+        Alert.alert(
+          'Localização',
+          'Para compartilhar em segundo plano, permita a localização "o tempo todo" nas configurações.',
+        );
       }
     } catch (error) {
-      Alert.alert('Localização', error instanceof Error ? error.message : 'Erro ao compartilhar localização.');
+      Alert.alert('Localização', error instanceof Error ? error.message : 'Erro ao ativar o compartilhamento.');
     }
   }
 
@@ -187,13 +198,16 @@ export default function MapScreen() {
             ))
           )}
 
-          {Platform.OS !== 'web' ? (
+          {supportsBackground ? (
             <View className="mt-md">
-              <Button
-                title={backgroundOn ? 'Parar compartilhamento em 2º plano' : 'Compartilhar em 2º plano'}
-                variant={backgroundOn ? 'secondary' : 'primary'}
-                onPress={toggleBackground}
-              />
+              {backgroundOn ? (
+                <View className="flex-row items-center gap-sm rounded-lg bg-neutral-100 px-md py-md dark:bg-neutral-800">
+                  <Ionicons name="location" size={18} color={colors.success[500]} />
+                  <Text variant="muted">Compartilhando sua localização o tempo todo.</Text>
+                </View>
+              ) : (
+                <Button title="Compartilhar em 2º plano" onPress={enableBackground} />
+              )}
             </View>
           ) : null}
         </BottomSheetScrollView>

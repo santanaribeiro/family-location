@@ -42,6 +42,15 @@ export async function startBackgroundUpdates(): Promise<boolean> {
   return true;
 }
 
+/** Indica se o compartilhamento em segundo plano já está ativo. */
+export async function isBackgroundActive(): Promise<boolean> {
+  try {
+    return await Location.hasStartedLocationUpdatesAsync(BACKGROUND_LOCATION_TASK);
+  } catch {
+    return false;
+  }
+}
+
 export async function stopBackgroundUpdates(): Promise<void> {
   const started = await Location.hasStartedLocationUpdatesAsync(BACKGROUND_LOCATION_TASK);
   if (started) await Location.stopLocationUpdatesAsync(BACKGROUND_LOCATION_TASK);

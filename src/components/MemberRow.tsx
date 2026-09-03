@@ -1,8 +1,7 @@
-import { useState } from 'react';
-import { Image, View } from 'react-native';
+import { View } from 'react-native';
 
+import { Avatar } from '@/components/Avatar';
 import { Text } from '@/components/Text';
-import { initials } from '@/utils/avatar';
 import { timeAgo } from '@/utils/time';
 
 export interface MemberRowProps {
@@ -13,22 +12,9 @@ export interface MemberRowProps {
 
 /** Linha da lista de membros (avatar + nome + última atualização). */
 export function MemberRow({ name, avatarUrl, recordedAt }: MemberRowProps) {
-  const [failed, setFailed] = useState(false);
-  const showImage = avatarUrl && !failed;
-
   return (
     <View className="flex-row items-center gap-md py-sm">
-      <View className="h-12 w-12 items-center justify-center overflow-hidden rounded-full border border-neutral-200 bg-brand-500 dark:border-neutral-700">
-        {showImage ? (
-          <Image
-            source={{ uri: avatarUrl }}
-            className="h-full w-full"
-            onError={() => setFailed(true)}
-          />
-        ) : (
-          <Text className="font-bold text-white">{initials(name)}</Text>
-        )}
-      </View>
+      <Avatar url={avatarUrl} name={name} size={48} className="border border-neutral-200 dark:border-neutral-700" />
       <View className="flex-1">
         <Text variant="body" className="font-semibold">
           {name}
