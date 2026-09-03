@@ -4,12 +4,13 @@ import Constants, { ExecutionEnvironment } from 'expo-constants';
 import type { LocationSubscription } from 'expo-location';
 import { useFocusEffect } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Alert, Platform, useColorScheme, View } from 'react-native';
+import { Alert, Platform, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Button, Screen, Text } from '@/components';
 import { FamilySelector } from '@/components/FamilySelector';
 import FamilyMap from '@/components/FamilyMap';
+import { JoinFamilyButton } from '@/components/JoinFamilyButton';
 import { MemberRow } from '@/components/MemberRow';
 import { listMembers, listMyFamilies, type FamilyWithRole, type MemberWithUser } from '@/services/family';
 import {
@@ -44,7 +45,6 @@ function FallbackMessage({ children }: { children: string }) {
 export default function MapScreen() {
   const { activeFamilyId, setActiveFamily } = useFamilyStore();
   const insets = useSafeAreaInsets();
-  const scheme = useColorScheme();
 
   const [families, setFamilies] = useState<FamilyWithRole[]>([]);
   const [allMembers, setAllMembers] = useState<MemberWithUser[]>([]);
@@ -53,25 +53,19 @@ export default function MapScreen() {
   const [backgroundOn, setBackgroundOn] = useState(false);
   const subscriptionRef = useRef<LocationSubscription | null>(null);
 
-  // Recarrega as famílias sempre que a tela do mapa ganha foco
-  // (assim uma família recém-criada em outra aba aparece automaticamente).
-  useFocusEffect(
-    useCallback(() => {
-      let cancelled = false;
-      listMyFamilies()
-        .then((list) => {
-          if (cancelled) return;
-          setFamilies(list);
-          if (list.length > 0 && !list.some((f) => f.id === activeFamilyId)) {
-            setActiveFamily(list[0].id);
-          }
-        })
-        .catch(() => {});
-      return () => {
-        cancelled = true;
-      };
-    }, [activeFamilyId, setActiveFamily]),
-  );
+  const reloadFamilies = useCallback(() => {
+    listMyFamilies()
+      .then((list) => {
+        setFamilies(list);
+        if (list.length > 0 && !list.some((f) => f.id === activeFamilyId)) {
+          setActiveFamily(list[0].id);
+        }
+      })
+      .catch(() => {});
+  }, [activeFamilyId, setActiveFamily]);
+
+  // Recarrega famílias ao focar (ex.: família criada em outra aba aparece sozinha).
+  useFocusEffect(useCallback(() => reloadFamilies(), [reloadFamilies]));
 
   useEffect(() => {
     if (!activeFamilyId) {
@@ -116,7 +110,6 @@ export default function MapScreen() {
     };
   }, []);
 
-  // Reflete se o compartilhamento em 2º plano já está ativo (persistente).
   useEffect(() => {
     if (!supportsBackground) return;
     isBackgroundActive().then(setBackgroundOn).catch(() => {});
@@ -143,7 +136,7 @@ export default function MapScreen() {
       if (!ok) {
         Alert.alert(
           'Localização',
-          'Para compartilhar em segundo plano, permita a localização "o tempo todo" nas configurações.',
+          'Para compartilhar em segundo plano, permita a localização “o tempo todo” nas configurações.',
         );
       }
     } catch (error) {
@@ -170,10 +163,11 @@ export default function MapScreen() {
     <View className="flex-1">
       <FamilyMap members={located} initialRegion={initialRegion} own={own} />
 
-      {/* Seletor de família (topo, flutuando sobre o mapa) */}
+      {/* Topo: seletor de família + botão de entrar */}
       <View className="absolute inset-x-0" style={{ top: insets.top + 8 }} pointerEvents="box-none">
-        <View className="px-md">
+        <View className="flex-row items-center justify-between gap-sm px-md">
           <FamilySelector families={families} activeId={activeFamilyId} onSelect={setActiveFamily} />
+          <JoinFamilyButton onJoined={reloadFamilies} />
         </View>
       </View>
 
@@ -182,8 +176,8 @@ export default function MapScreen() {
         index={0}
         snapPoints={['22%', '75%']}
         enablePanDownToClose={false}
-        backgroundStyle={{ backgroundColor: scheme === 'dark' ? '#20242B' : '#FFFFFF' }}
-        handleIndicatorStyle={{ backgroundColor: scheme === 'dark' ? '#4B515C' : '#C2C8D2' }}
+        backgroundStyle={{ backgroundColor: '#20242B' }}
+        handleIndicatorStyle={{ backgroundColor: '#4B515C' }}
       >
         <BottomSheetScrollView contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: insets.bottom + 24 }}>
           <Text variant="subtitle" className="mb-sm">
@@ -201,7 +195,7 @@ export default function MapScreen() {
           {supportsBackground ? (
             <View className="mt-md">
               {backgroundOn ? (
-                <View className="flex-row items-center gap-sm rounded-lg bg-neutral-100 px-md py-md dark:bg-neutral-800">
+                <View className="flex-row items-center gap-sm rounded-lg bg-neutral-800 px-md py-md">
                   <Ionicons name="location" size={18} color={colors.success[500]} />
                   <Text variant="muted">Compartilhando sua localização o tempo todo.</Text>
                 </View>

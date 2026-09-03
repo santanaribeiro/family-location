@@ -1,203 +1,102 @@
-import { useCallback, useEffect, useState } from 'react';
-import { ActivityIndicator, Alert, ScrollView, Share, View } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import * as Clipboard from 'expo-clipboard';
+import { useFocusEffect } from 'expo-router';
+import { useCallback, useState } from 'react';
+import { Alert, Pressable, ScrollView, View } from 'react-native';
 
-import { Button, Input, Screen, Text } from '@/components';
+import { Button, Screen, Text } from '@/components';
+import { CreateFamilyModal } from '@/components/CreateFamilyModal';
 import { useAuth } from '@/services/auth';
-import {
-  acceptInvite,
-  createFamily,
-  createInvite,
-  leaveFamily,
-  listMembers,
-  listMyFamilies,
-  removeMember,
-  type FamilyWithRole,
-  type MemberWithUser,
-} from '@/services/family';
+import { createInvite, leaveFamily, listMyFamilies, type FamilyWithRole } from '@/services/family';
 import { useFamilyStore } from '@/stores/familyStore';
-
-function errorMessage(error: unknown): string {
-  return error instanceof Error ? error.message : 'Algo deu errado.';
-}
+import { colors } from '@/theme';
+import { inviteLink } from '@/utils/invite';
 
 export default function FamilyScreen() {
   const { user } = useAuth();
   const { activeFamilyId, setActiveFamily } = useFamilyStore();
-
   const [families, setFamilies] = useState<FamilyWithRole[]>([]);
-  const [members, setMembers] = useState<MemberWithUser[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [busy, setBusy] = useState(false);
-  const [newName, setNewName] = useState('');
-  const [inviteCode, setInviteCode] = useState('');
+  const [createOpen, setCreateOpen] = useState(false);
 
-  const active = families.find((f) => f.id === activeFamilyId) ?? null;
-  const canManage = active?.role === 'owner' || active?.role === 'admin';
-
-  const loadFamilies = useCallback(async () => {
-    const list = await listMyFamilies();
-    setFamilies(list);
-    if (list.length === 0) {
-      setActiveFamily(null);
-    } else if (!list.some((f) => f.id === activeFamilyId)) {
-      setActiveFamily(list[0].id);
-    }
-  }, [activeFamilyId, setActiveFamily]);
-
-  useEffect(() => {
-    loadFamilies()
-      .catch((error) => Alert.alert('Famílias', errorMessage(error)))
-      .finally(() => setLoading(false));
-    // Carrega uma vez ao montar.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+  const load = useCallback(() => {
+    listMyFamilies()
+      .then(setFamilies)
+      .catch(() => {});
   }, []);
 
-  useEffect(() => {
-    if (!activeFamilyId) {
-      setMembers([]);
-      return;
-    }
-    listMembers(activeFamilyId)
-      .then(setMembers)
-      .catch((error) => Alert.alert('Membros', errorMessage(error)));
-  }, [activeFamilyId]);
+  useFocusEffect(useCallback(() => load(), [load]));
 
-  async function run(action: () => Promise<void>) {
+  async function shareFamily(family: FamilyWithRole) {
     try {
-      setBusy(true);
-      await action();
+      const token = await createInvite(family.id);
+      await Clipboard.setStringAsync(inviteLink(token));
+      Alert.alert('Convite copiado', `O link de convite para “${family.name}” foi copiado. É só colar e enviar.`);
     } catch (error) {
-      Alert.alert('Erro', errorMessage(error));
-    } finally {
-      setBusy(false);
+      Alert.alert('Convite', error instanceof Error ? error.message : 'Erro ao gerar o convite.');
     }
   }
 
-  const handleCreate = () =>
-    run(async () => {
-      if (!newName.trim()) return;
-      const created = await createFamily(newName);
-      setNewName('');
-      await loadFamilies();
-      setActiveFamily(created.id);
-    });
-
-  const handleJoin = () =>
-    run(async () => {
-      if (!inviteCode.trim()) return;
-      await acceptInvite(inviteCode);
-      setInviteCode('');
-      await loadFamilies();
-    });
-
-  const handleInvite = () =>
-    run(async () => {
-      if (!active) return;
-      const token = await createInvite(active.id);
-      await Share.share({
-        message: `Entre na família "${active.name}" no Family Location.\nCódigo do convite: ${token}`,
-      });
-    });
-
-  const handleLeave = () => {
-    if (!active || !user) return;
-    Alert.alert('Sair da família', `Deseja sair de "${active.name}"?`, [
+  function confirmLeave(family: FamilyWithRole) {
+    if (!user) return;
+    Alert.alert('Sair da família', `Deseja sair de “${family.name}”?`, [
       { text: 'Cancelar', style: 'cancel' },
       {
         text: 'Sair',
         style: 'destructive',
-        onPress: () =>
-          run(async () => {
-            await leaveFamily(active.id, user.id);
-            await loadFamilies();
-          }),
+        onPress: async () => {
+          try {
+            await leaveFamily(family.id, user.id);
+            if (activeFamilyId === family.id) setActiveFamily(null);
+            load();
+          } catch (error) {
+            Alert.alert('Família', error instanceof Error ? error.message : 'Erro ao sair.');
+          }
+        },
       },
     ]);
-  };
-
-  const handleRemove = (member: MemberWithUser) =>
-    run(async () => {
-      await removeMember(member.id);
-      if (activeFamilyId) setMembers(await listMembers(activeFamilyId));
-    });
-
-  if (loading) {
-    return (
-      <Screen>
-        <View className="flex-1 items-center justify-center">
-          <ActivityIndicator />
-        </View>
-      </Screen>
-    );
   }
 
   return (
-    <Screen padded={false}>
-      <ScrollView className="flex-1">
-        <View className="gap-lg px-lg py-lg">
+    <Screen>
+      <View className="flex-1 gap-lg">
+        <View className="flex-row items-center justify-between">
           <Text variant="title">Famílias</Text>
+          <Button title="+ Família" size="sm" onPress={() => setCreateOpen(true)} />
+        </View>
 
-          {families.length > 0 ? (
+        {families.length === 0 ? (
+          <Text variant="muted">
+            Você ainda não participa de nenhuma família. Crie uma em “+ Família”, ou entre em uma pelo botão
+            “Entrar” na aba Mapa.
+          </Text>
+        ) : (
+          <ScrollView className="flex-1">
             <View className="gap-sm">
               {families.map((family) => (
-                <Button
-                  key={family.id}
-                  title={`${family.id === activeFamilyId ? '● ' : ''}${family.name}  ·  ${family.role}`}
-                  variant={family.id === activeFamilyId ? 'primary' : 'secondary'}
-                  onPress={() => setActiveFamily(family.id)}
-                />
-              ))}
-            </View>
-          ) : (
-            <Text variant="muted">
-              Você ainda não participa de nenhuma família. Crie uma ou entre com um código.
-            </Text>
-          )}
-
-          {active ? (
-            <View className="gap-sm">
-              <Text variant="subtitle">Membros de {active.name}</Text>
-              {members.map((member) => (
                 <View
-                  key={member.id}
-                  className="flex-row items-center justify-between rounded-lg bg-neutral-100 px-md py-sm dark:bg-neutral-800"
+                  key={family.id}
+                  className="flex-row items-center justify-between rounded-lg bg-neutral-800 px-md py-md"
                 >
                   <View className="flex-1 pr-sm">
-                    <Text variant="body">{member.user?.name ?? member.user?.email ?? member.user_id}</Text>
-                    <Text variant="caption">{member.role}</Text>
+                    <Text variant="body" className="font-semibold">
+                      {family.name}
+                    </Text>
+                    <Text variant="caption">{family.role}</Text>
                   </View>
-                  {canManage && member.user_id !== user?.id ? (
-                    <Button title="Remover" variant="ghost" size="sm" onPress={() => handleRemove(member)} />
-                  ) : null}
+                  <Pressable onPress={() => shareFamily(family)} className="p-sm" accessibilityLabel="Compartilhar convite">
+                    <Ionicons name="share-social-outline" size={20} color={colors.brand[400]} />
+                  </Pressable>
+                  <Pressable onPress={() => confirmLeave(family)} className="p-sm" accessibilityLabel="Sair da família">
+                    <Ionicons name="exit-outline" size={20} color={colors.neutral[400]} />
+                  </Pressable>
                 </View>
               ))}
-              <View className="flex-row gap-sm">
-                {canManage ? (
-                  <Button title="Convidar" onPress={handleInvite} loading={busy} className="flex-1" />
-                ) : null}
-                <Button title="Sair" variant="secondary" onPress={handleLeave} className="flex-1" />
-              </View>
             </View>
-          ) : null}
+          </ScrollView>
+        )}
+      </View>
 
-          <View className="gap-sm">
-            <Text variant="subtitle">Criar família</Text>
-            <Input placeholder="Nome da família" value={newName} onChangeText={setNewName} />
-            <Button title="Criar" onPress={handleCreate} loading={busy} />
-          </View>
-
-          <View className="gap-sm">
-            <Text variant="subtitle">Entrar com um código</Text>
-            <Input
-              placeholder="Cole o código do convite"
-              value={inviteCode}
-              onChangeText={setInviteCode}
-              autoCapitalize="none"
-            />
-            <Button title="Entrar" variant="secondary" onPress={handleJoin} loading={busy} />
-          </View>
-        </View>
-      </ScrollView>
+      <CreateFamilyModal visible={createOpen} onClose={() => setCreateOpen(false)} onCreated={load} />
     </Screen>
   );
 }

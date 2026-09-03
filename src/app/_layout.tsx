@@ -2,18 +2,22 @@ import '@/global.css';
 
 import { Stack, useRouter, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
+import { colorScheme } from 'nativewind';
 import { useEffect } from 'react';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { AuthProvider, useAuth } from '@/services/auth';
 
+// App é dark-only (sem toggle de tema).
+colorScheme.set('dark');
+
 export default function RootLayout() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider>
         <AuthProvider>
-          <StatusBar style="auto" />
+          <StatusBar style="light" />
           <RootNavigator />
         </AuthProvider>
       </SafeAreaProvider>
