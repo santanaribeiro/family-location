@@ -4,6 +4,7 @@ import { useCallback, useState } from 'react';
 import { Pressable, ScrollView, View } from 'react-native';
 
 import { Button, Screen, Text } from '@/components';
+import { ActivityModal } from '@/components/ActivityModal';
 import { CreateFamilyModal } from '@/components/CreateFamilyModal';
 import { InviteQrModal } from '@/components/InviteQrModal';
 import { useAuth } from '@/services/auth';
@@ -25,6 +26,7 @@ export default function FamilyScreen() {
   const [families, setFamilies] = useState<FamilyWithRole[]>([]);
   const [createOpen, setCreateOpen] = useState(false);
   const [inviteFor, setInviteFor] = useState<FamilyWithRole | null>(null);
+  const [activityFor, setActivityFor] = useState<FamilyWithRole | null>(null);
 
   const load = useCallback(() => {
     listMyFamilies()
@@ -87,6 +89,13 @@ export default function FamilyScreen() {
 
                     <View className="flex-row gap-xs">
                       <Pressable
+                        onPress={() => setActivityFor(family)}
+                        className="h-9 w-9 items-center justify-center rounded-full bg-neutral-700 active:bg-neutral-600"
+                        accessibilityLabel="Ver atividade"
+                      >
+                        <Ionicons name="time-outline" size={18} color={colors.neutral[100]} />
+                      </Pressable>
+                      <Pressable
                         onPress={() => setInviteFor(family)}
                         className="h-9 w-9 items-center justify-center rounded-full bg-neutral-700 active:bg-neutral-600"
                         accessibilityLabel="Compartilhar convite"
@@ -116,6 +125,13 @@ export default function FamilyScreen() {
         familyId={inviteFor?.id ?? ''}
         familyName={inviteFor?.name?.trim() || 'Família sem nome'}
         onClose={() => setInviteFor(null)}
+      />
+
+      <ActivityModal
+        visible={activityFor !== null}
+        familyId={activityFor?.id ?? ''}
+        familyName={activityFor?.name?.trim() || 'Família sem nome'}
+        onClose={() => setActivityFor(null)}
       />
     </Screen>
   );

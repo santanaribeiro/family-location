@@ -81,6 +81,29 @@ export interface UserDeviceStatus {
   updated_at: string;
 }
 
+export type AuditAction =
+  | 'family_created'
+  | 'family_renamed'
+  | 'invite_created'
+  | 'member_joined'
+  | 'member_left'
+  | 'member_removed'
+  | 'member_role_changed'
+  | 'place_created'
+  | 'place_updated'
+  | 'place_deleted';
+
+/** Uma entrada do log de auditoria da família (escrita só por triggers no banco). */
+export interface AuditLogEntry {
+  id: string;
+  family_group_id: string;
+  actor_user_id: string | null;
+  action: AuditAction;
+  target_user_id: string | null;
+  metadata: Record<string, unknown>;
+  created_at: string;
+}
+
 export interface PlaceNotificationPref {
   id: string;
   saved_place_id: string;
