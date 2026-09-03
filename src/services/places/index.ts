@@ -70,11 +70,18 @@ export async function deletePlace(id: string): Promise<void> {
   if (error) throw error;
 }
 
-/** Assina mudanças em saved_places da família (Realtime). Retorna a função de cancelamento. */
+/**
+ * Assina mudanças em saved_places da família (Realtime). Retorna a função de cancelamento.
+ *
+ * O nome do canal precisa ser único por chamada: reusar um nome fixo faz um
+ * unmount/remount rápido (comum com useFocusEffect) tentar `.on()` num canal que já
+ * está `subscribe()`d antes do `removeChannel` anterior terminar, e o supabase-js
+ * lança "cannot add postgres_changes callbacks ... after subscribe()".
+ */
 export function subscribePlaces(onChange: () => void): () => void {
   const c = client();
   const channel = c
-    .channel('saved_places_changes')
+    .channel(`saved_places_changes_${Date.now()}_${Math.random().toString(36).slice(2)}`)
     .on('postgres_changes', { event: '*', schema: 'public', table: 'saved_places' }, () => onChange())
     .subscribe();
   return () => {

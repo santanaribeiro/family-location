@@ -22,13 +22,47 @@ export interface FamilyMapProps {
 const apiKey = process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY ?? '';
 const mapId = process.env.EXPO_PUBLIC_GOOGLE_MAPS_ID || 'DEMO_MAP_ID';
 
+function easeInOutQuad(t: number): number {
+  return t < 0.5 ? 2 * t * t : 1 - (-2 * t + 2) ** 2 / 2;
+}
+
+/**
+ * Anima suavemente centro + zoom até o destino. `map.panTo` sozinho até anima o
+ * pan, mas o zoom muda instantaneamente — o resultado parecia o mapa "teleportando"
+ * em vez de voar até o ponto. Interpola os dois juntos com requestAnimationFrame.
+ */
+function flyTo(
+  map: NonNullable<ReturnType<typeof useMap>>,
+  target: { lat: number; lng: number; zoom: number },
+  duration = 650,
+) {
+  const startCenter = map.getCenter();
+  const startZoom = map.getZoom();
+  if (!startCenter || startZoom == null) {
+    map.setCenter({ lat: target.lat, lng: target.lng });
+    map.setZoom(target.zoom);
+    return;
+  }
+  const startLat = startCenter.lat();
+  const startLng = startCenter.lng();
+  const startTime = performance.now();
+
+  function step(now: number) {
+    const t = Math.min(1, (now - startTime) / duration);
+    const e = easeInOutQuad(t);
+    map.setCenter({ lat: startLat + (target.lat - startLat) * e, lng: startLng + (target.lng - startLng) * e });
+    map.setZoom(startZoom + (target.zoom - startZoom) * e);
+    if (t < 1) requestAnimationFrame(step);
+  }
+  requestAnimationFrame(step);
+}
+
 /** Recentraliza o mapa na posição do usuário assim que ela fica disponível. */
 function Recenter({ own }: { own?: { latitude: number; longitude: number } | null }) {
   const map = useMap();
   useEffect(() => {
     if (map && own) {
-      map.panTo({ lat: own.latitude, lng: own.longitude });
-      map.setZoom(15);
+      flyTo(map, { lat: own.latitude, lng: own.longitude, zoom: 15 });
     }
   }, [map, own]);
   return null;
@@ -39,8 +73,7 @@ function Focus({ focus }: { focus?: { latitude: number; longitude: number; key: 
   const map = useMap();
   useEffect(() => {
     if (map && focus) {
-      map.panTo({ lat: focus.latitude, lng: focus.longitude });
-      map.setZoom(16);
+      flyTo(map, { lat: focus.latitude, lng: focus.longitude, zoom: 16 });
     }
   }, [map, focus]);
   return null;

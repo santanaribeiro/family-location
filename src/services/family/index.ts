@@ -18,9 +18,19 @@ export interface MemberWithUser extends FamilyGroupMember {
 
 /** Famílias das quais o usuário participa, com o papel dele em cada uma. */
 export async function listMyFamilies(): Promise<FamilyWithRole[]> {
-  const { data, error } = await client()
+  const c = client();
+  const { data: userRes } = await c.auth.getUser();
+  const uid = userRes.user?.id;
+  if (!uid) return [];
+
+  // Precisa filtrar por user_id explicitamente: a RLS de family_group_members libera
+  // ver TODAS as linhas de uma família que você compartilha (é o que lista membros da
+  // família), não só a sua — sem esse filtro, cada colega de família vira uma linha
+  // aqui, duplicando a família na listagem uma vez por pessoa.
+  const { data, error } = await c
     .from('family_group_members')
     .select('role, family_groups(*)')
+    .eq('user_id', uid)
     .order('joined_at', { ascending: true });
   if (error) throw error;
   return (data ?? [])

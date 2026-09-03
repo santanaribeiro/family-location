@@ -1,6 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
-import { useCallback, useState } from 'react';
-import { useFocusEffect } from 'expo-router';
+import { useCallback, useEffect, useState } from 'react';
 import { Pressable, ScrollView, View } from 'react-native';
 
 import { Button, Screen, Text } from '@/components';
@@ -26,14 +25,15 @@ export default function PlacesScreen() {
       .catch(() => {});
   }, [activeFamilyId]);
 
-  useFocusEffect(useCallback(() => load(), [load]));
-
-  useFocusEffect(
-    useCallback(() => {
-      const unsubscribe = subscribePlaces(load);
-      return unsubscribe;
-    }, [load]),
-  );
+  // Um único efeito de vida do componente (não por foco): evita assinar o canal
+  // Realtime duas vezes em sequência rápida, o que já causou o canal a ser
+  // reaberto antes do anterior terminar de fechar.
+  useEffect(() => {
+    load();
+    if (!activeFamilyId) return;
+    const unsubscribe = subscribePlaces(load);
+    return unsubscribe;
+  }, [activeFamilyId, load]);
 
   if (!activeFamilyId) {
     return (

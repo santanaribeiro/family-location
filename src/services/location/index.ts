@@ -90,11 +90,18 @@ export async function getFamilyLocations(familyId: string): Promise<MemberLocati
     .map((m) => ({ ...(byUser.get(m.user_id) as UserLocation), user: m.user }));
 }
 
-/** Assina mudanças em user_locations (Realtime). Retorna a função de cancelamento. */
+/**
+ * Assina mudanças em user_locations (Realtime). Retorna a função de cancelamento.
+ *
+ * O nome do canal precisa ser único por chamada: reusar um nome fixo faz um
+ * unmount/remount rápido (comum com useFocusEffect) tentar `.on()` num canal que já
+ * está `subscribe()`d antes do `removeChannel` anterior terminar, e o supabase-js
+ * lança "cannot add postgres_changes callbacks ... after subscribe()".
+ */
 export function subscribeFamilyLocations(onChange: () => void): () => void {
   const c = client();
   const channel = c
-    .channel('user_locations_changes')
+    .channel(`user_locations_changes_${Date.now()}_${Math.random().toString(36).slice(2)}`)
     .on('postgres_changes', { event: '*', schema: 'public', table: 'user_locations' }, () => onChange())
     .subscribe();
   return () => {

@@ -12,6 +12,7 @@ import { FamilySelector } from '@/components/FamilySelector';
 import FamilyMap from '@/components/FamilyMap';
 import { JoinFamilyButton } from '@/components/JoinFamilyButton';
 import { MemberRow } from '@/components/MemberRow';
+import { useAuth } from '@/services/auth';
 import { listMembers, listMyFamilies, type FamilyWithRole, type MemberWithUser } from '@/services/family';
 import {
   getCurrent,
@@ -47,6 +48,7 @@ function FallbackMessage({ children }: { children: string }) {
 
 export default function MapScreen() {
   const { activeFamilyId, setActiveFamily } = useFamilyStore();
+  const { user } = useAuth();
   const insets = useSafeAreaInsets();
 
   const [families, setFamilies] = useState<FamilyWithRole[]>([]);
@@ -144,21 +146,22 @@ export default function MapScreen() {
     isBackgroundActive().then(setBackgroundOn).catch(() => {});
   }, []);
 
-  const listRows = useMemo(
-    () =>
-      allMembers.map((member) => {
-        const location = located.find((l) => l.user_id === member.user_id);
-        return {
-          key: member.user_id,
-          name: member.user?.name ?? member.user?.email ?? 'Membro',
-          avatarUrl: member.user?.avatar_url ?? null,
-          recordedAt: location?.recorded_at ?? null,
-          latitude: location?.latitude ?? null,
-          longitude: location?.longitude ?? null,
-        };
-      }),
-    [allMembers, located],
-  );
+  const listRows = useMemo(() => {
+    const rows = allMembers.map((member) => {
+      const location = located.find((l) => l.user_id === member.user_id);
+      return {
+        key: member.user_id,
+        name: member.user?.name ?? member.user?.email ?? 'Membro',
+        avatarUrl: member.user?.avatar_url ?? null,
+        recordedAt: location?.recorded_at ?? null,
+        latitude: location?.latitude ?? null,
+        longitude: location?.longitude ?? null,
+        isSelf: member.user_id === user?.id,
+      };
+    });
+    // Seu próprio usuário sempre primeiro; os demais mantêm a ordem de entrada na família.
+    return rows.sort((a, b) => Number(b.isSelf) - Number(a.isSelf));
+  }, [allMembers, located, user?.id]);
 
   function focusOnMember(row: (typeof listRows)[number]) {
     if (row.latitude == null || row.longitude == null) {
