@@ -35,9 +35,12 @@ export const colors = {
     900: '#111111',
   },
 
-  success: { 500: '#7A7A7A', 600: '#4A4A4A' },
-  warning: { 500: '#7A7A7A', 600: '#4A4A4A' },
-  danger: { 500: '#7A7A7A', 600: '#4A4A4A' },
+  // Única exceção deliberada ao monocromático: nível de bateria (docs/FEATURES_NEXT.md
+  // §2) — informação que se lê num piscar de olho por cor. Nenhum outro lugar do app
+  // deve usar essas cores.
+  success: { 500: '#5FBF7B', 600: '#4A9962' },
+  warning: { 500: '#E0B95C', 600: '#B89448' },
+  danger: { 500: '#E5686B', 600: '#BC5356' },
 } as const;
 
 /** Papéis semânticos (mantidos para uso futuro). */

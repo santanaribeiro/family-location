@@ -14,9 +14,10 @@ const colors = {
     0: '#BFBFBF', 50: '#BFBFBF', 100: '#BFBFBF', 200: '#4A4A4A', 300: '#7A7A7A',
     400: '#7A7A7A', 500: '#7A7A7A', 600: '#4A4A4A', 700: '#4A4A4A', 800: '#2E2E2E', 900: '#111111',
   },
-  success: { 500: '#7A7A7A', 600: '#4A4A4A' },
-  warning: { 500: '#7A7A7A', 600: '#4A4A4A' },
-  danger: { 500: '#7A7A7A', 600: '#4A4A4A' },
+  // Única exceção deliberada ao monocromático: nível de bateria. Ver src/theme/colors.ts.
+  success: { 500: '#5FBF7B', 600: '#4A9962' },
+  warning: { 500: '#E0B95C', 600: '#B89448' },
+  danger: { 500: '#E5686B', 600: '#BC5356' },
 };
 
 module.exports = {

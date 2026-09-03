@@ -1,6 +1,8 @@
 import * as Location from 'expo-location';
 import * as TaskManager from 'expo-task-manager';
 
+import { upsertBatteryStatus } from '@/services/battery';
+
 import { saveLocation } from './index';
 
 export const BACKGROUND_LOCATION_TASK = 'family-location-background';
@@ -13,6 +15,8 @@ TaskManager.defineTask(BACKGROUND_LOCATION_TASK, async ({ data, error }) => {
   if (!latest) return;
   try {
     await saveLocation(latest);
+    // Mesmo ciclo da task de localização — evita criar outro agendamento em 2º plano.
+    await upsertBatteryStatus();
   } catch {
     // Em segundo plano, falhas de rede são ignoradas silenciosamente.
   }

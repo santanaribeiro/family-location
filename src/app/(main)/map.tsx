@@ -14,6 +14,7 @@ import { JoinFamilyButton } from '@/components/JoinFamilyButton';
 import { MemberRow } from '@/components/MemberRow';
 import { PlaceFormModal } from '@/components/PlaceFormModal';
 import { useAuth } from '@/services/auth';
+import { getDeviceStatuses, subscribeDeviceStatus, upsertBatteryStatus, watchBattery } from '@/services/battery';
 import { listMembers, listMyFamilies, type FamilyWithRole, type MemberWithUser } from '@/services/family';
 import {
   getCurrent,
@@ -26,7 +27,7 @@ import { isBackgroundActive, startBackgroundUpdates } from '@/services/location/
 import { listPlaces, subscribePlaces } from '@/services/places';
 import { useFamilyStore } from '@/stores/familyStore';
 import { colors } from '@/theme';
-import type { SavedPlace } from '@/types/database';
+import type { SavedPlace, UserDeviceStatus } from '@/types/database';
 import { notify } from '@/utils/alert';
 
 const isExpoGo = Constants.executionEnvironment === ExecutionEnvironment.StoreClient;
@@ -55,6 +56,7 @@ export default function MapScreen() {
   const [families, setFamilies] = useState<FamilyWithRole[]>([]);
   const [allMembers, setAllMembers] = useState<MemberWithUser[]>([]);
   const [located, setLocated] = useState<MemberLocation[]>([]);
+  const [deviceStatuses, setDeviceStatuses] = useState<UserDeviceStatus[]>([]);
   const [places, setPlaces] = useState<SavedPlace[]>([]);
   const [own, setOwn] = useState<{ latitude: number; longitude: number } | null>(null);
   const [backgroundOn, setBackgroundOn] = useState(false);
@@ -83,24 +85,31 @@ export default function MapScreen() {
     if (!activeFamilyId) {
       setAllMembers([]);
       setLocated([]);
+      setDeviceStatuses([]);
       return;
     }
     let cancelled = false;
-    const refresh = () => {
-      Promise.all([listMembers(activeFamilyId), getFamilyLocations(activeFamilyId)])
-        .then(([membersList, locations]) => {
-          if (!cancelled) {
-            setAllMembers(membersList);
-            setLocated(locations);
-          }
-        })
-        .catch(() => {});
+    const refresh = async () => {
+      try {
+        const membersList = await listMembers(activeFamilyId);
+        if (cancelled) return;
+        setAllMembers(membersList);
+        const ids = membersList.map((m) => m.user_id);
+        const [locations, statuses] = await Promise.all([getFamilyLocations(activeFamilyId), getDeviceStatuses(ids)]);
+        if (cancelled) return;
+        setLocated(locations);
+        setDeviceStatuses(statuses);
+      } catch {
+        // Falha silenciosa — o próximo refresh (realtime) tenta de novo.
+      }
     };
     refresh();
-    const unsubscribe = subscribeFamilyLocations(refresh);
+    const unsubscribeLocations = subscribeFamilyLocations(refresh);
+    const unsubscribeBattery = subscribeDeviceStatus(refresh);
     return () => {
       cancelled = true;
-      unsubscribe();
+      unsubscribeLocations();
+      unsubscribeBattery();
     };
   }, [activeFamilyId]);
 
@@ -148,9 +157,16 @@ export default function MapScreen() {
     isBackgroundActive().then(setBackgroundOn).catch(() => {});
   }, []);
 
+  useEffect(() => {
+    if (isExpoGo) return;
+    void upsertBatteryStatus();
+    return watchBattery();
+  }, []);
+
   const listRows = useMemo(() => {
     const rows = allMembers.map((member) => {
       const location = located.find((l) => l.user_id === member.user_id);
+      const battery = deviceStatuses.find((d) => d.user_id === member.user_id);
       return {
         key: member.user_id,
         name: member.user?.name ?? member.user?.email ?? 'Membro',
@@ -158,12 +174,14 @@ export default function MapScreen() {
         recordedAt: location?.recorded_at ?? null,
         latitude: location?.latitude ?? null,
         longitude: location?.longitude ?? null,
+        batteryLevel: battery?.battery_level ?? null,
+        batteryState: battery?.battery_state ?? 'unknown',
         isSelf: member.user_id === user?.id,
       };
     });
     // Seu próprio usuário sempre primeiro; os demais mantêm a ordem de entrada na família.
     return rows.sort((a, b) => Number(b.isSelf) - Number(a.isSelf));
-  }, [allMembers, located, user?.id]);
+  }, [allMembers, located, deviceStatuses, user?.id]);
 
   function focusOnMember(row: (typeof listRows)[number]) {
     if (row.latitude == null || row.longitude == null) {
@@ -208,6 +226,7 @@ export default function MapScreen() {
     <View className="flex-1">
       <FamilyMap
         members={located}
+        deviceStatuses={deviceStatuses}
         initialRegion={initialRegion}
         own={own}
         focus={focusTarget}
@@ -242,7 +261,13 @@ export default function MapScreen() {
           ) : (
             listRows.map((row) => (
               <Pressable key={row.key} onPress={() => focusOnMember(row)}>
-                <MemberRow name={row.name} avatarUrl={row.avatarUrl} recordedAt={row.recordedAt} />
+                <MemberRow
+                  name={row.name}
+                  avatarUrl={row.avatarUrl}
+                  recordedAt={row.recordedAt}
+                  batteryLevel={row.batteryLevel}
+                  batteryState={row.batteryState}
+                />
               </Pressable>
             ))
           )}

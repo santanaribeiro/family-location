@@ -70,6 +70,17 @@ export interface SavedPlace {
   updated_at: string;
 }
 
+export type BatteryStateText = 'unknown' | 'unplugged' | 'charging' | 'full';
+
+/** Último status de bateria conhecido do dispositivo do usuário (tabela separada de UserLocation). */
+export interface UserDeviceStatus {
+  user_id: string;
+  battery_level: number | null;
+  battery_state: BatteryStateText;
+  low_power_mode: boolean;
+  updated_at: string;
+}
+
 export interface PlaceNotificationPref {
   id: string;
   saved_place_id: string;

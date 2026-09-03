@@ -1,5 +1,6 @@
 import * as Location from 'expo-location';
 
+import { upsertBatteryStatus } from '@/services/battery';
 import { supabase } from '@/services/supabase';
 import type { UserLocation } from '@/types/database';
 
@@ -58,6 +59,8 @@ export async function watchAndSync(
     (loc) => {
       onUpdate?.(loc);
       void saveLocation(loc);
+      // Aproveita o mesmo ciclo em vez de criar um timer próprio (menos bateria gasta).
+      void upsertBatteryStatus();
     },
   );
 }
