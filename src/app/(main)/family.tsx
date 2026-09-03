@@ -1,18 +1,17 @@
 import { Ionicons } from '@expo/vector-icons';
-import * as Clipboard from 'expo-clipboard';
 import { useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { Pressable, ScrollView, View } from 'react-native';
 
 import { Button, Screen, Text } from '@/components';
 import { CreateFamilyModal } from '@/components/CreateFamilyModal';
+import { InviteQrModal } from '@/components/InviteQrModal';
 import { useAuth } from '@/services/auth';
-import { createInvite, leaveFamily, listMyFamilies, type FamilyWithRole } from '@/services/family';
+import { leaveFamily, listMyFamilies, type FamilyWithRole } from '@/services/family';
 import { useFamilyStore } from '@/stores/familyStore';
 import { colors } from '@/theme';
 import type { FamilyRole } from '@/types/database';
 import { confirmAsync, notify } from '@/utils/alert';
-import { inviteLink } from '@/utils/invite';
 
 const roleLabel: Record<FamilyRole, string> = {
   owner: 'Dono',
@@ -25,6 +24,7 @@ export default function FamilyScreen() {
   const { activeFamilyId, setActiveFamily } = useFamilyStore();
   const [families, setFamilies] = useState<FamilyWithRole[]>([]);
   const [createOpen, setCreateOpen] = useState(false);
+  const [inviteFor, setInviteFor] = useState<FamilyWithRole | null>(null);
 
   const load = useCallback(() => {
     listMyFamilies()
@@ -33,16 +33,6 @@ export default function FamilyScreen() {
   }, []);
 
   useFocusEffect(useCallback(() => load(), [load]));
-
-  async function shareFamily(family: FamilyWithRole) {
-    try {
-      const token = await createInvite(family.id);
-      await Clipboard.setStringAsync(inviteLink(token));
-      notify('Convite copiado', `O link de convite para “${family.name}” foi copiado. É só colar e enviar.`);
-    } catch (error) {
-      notify('Convite', error instanceof Error ? error.message : 'Erro ao gerar o convite.');
-    }
-  }
 
   async function confirmLeave(family: FamilyWithRole) {
     if (!user) return;
@@ -97,7 +87,7 @@ export default function FamilyScreen() {
 
                     <View className="flex-row gap-xs">
                       <Pressable
-                        onPress={() => shareFamily(family)}
+                        onPress={() => setInviteFor(family)}
                         className="h-9 w-9 items-center justify-center rounded-full bg-neutral-700 active:bg-neutral-600"
                         accessibilityLabel="Compartilhar convite"
                       >
@@ -120,6 +110,13 @@ export default function FamilyScreen() {
       </View>
 
       <CreateFamilyModal visible={createOpen} onClose={() => setCreateOpen(false)} onCreated={load} />
+
+      <InviteQrModal
+        visible={inviteFor !== null}
+        familyId={inviteFor?.id ?? ''}
+        familyName={inviteFor?.name?.trim() || 'Família sem nome'}
+        onClose={() => setInviteFor(null)}
+      />
     </Screen>
   );
 }

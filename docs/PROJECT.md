@@ -97,6 +97,10 @@ As seguintes funcionalidades serão deixadas para versões futuras:
 
 A arquitetura deve, entretanto, evitar decisões que dificultem a implementação futura dessas funcionalidades.
 
+> **Nota (2026-09-03):** "Chat" e "Bateria dos membros" foram priorizados para a próxima leva de desenvolvimento
+> e já estão especificados em `docs/FEATURES_NEXT.md`, junto com duas features novas (convite por QR code e log
+> de auditoria da família). Os demais itens desta lista continuam fora de escopo por ora.
+
 ---
 
 # 4. Stack tecnológica

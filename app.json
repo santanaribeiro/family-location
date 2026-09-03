@@ -43,6 +43,12 @@
           "isAndroidBackgroundLocationEnabled": true,
           "isAndroidForegroundServiceEnabled": true
         }
+      ],
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "O Family Location usa a câmera para ler o QR code de convite de uma família."
+        }
       ]
     ],
     "experiments": {
