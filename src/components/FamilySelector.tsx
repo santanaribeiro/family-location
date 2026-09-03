@@ -1,4 +1,4 @@
-import { Pressable, ScrollView, View } from 'react-native';
+import { Pressable, ScrollView } from 'react-native';
 
 import { Text } from '@/components/Text';
 import { shadows } from '@/theme';
