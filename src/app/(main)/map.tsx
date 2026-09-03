@@ -1,7 +1,8 @@
 import BottomSheet, { BottomSheetScrollView } from '@gorhom/bottom-sheet';
 import Constants, { ExecutionEnvironment } from 'expo-constants';
 import type { LocationSubscription } from 'expo-location';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useFocusEffect } from 'expo-router';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Alert, Platform, useColorScheme, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -49,17 +50,25 @@ export default function MapScreen() {
   const [backgroundOn, setBackgroundOn] = useState(false);
   const subscriptionRef = useRef<LocationSubscription | null>(null);
 
-  useEffect(() => {
-    listMyFamilies()
-      .then((list) => {
-        setFamilies(list);
-        if (list.length > 0 && !list.some((f) => f.id === activeFamilyId)) {
-          setActiveFamily(list[0].id);
-        }
-      })
-      .catch(() => {});
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  // Recarrega a lista de famílias sempre que a tela do mapa ganha foco
+  // (assim uma família recém-criada em outra aba aparece automaticamente).
+  useFocusEffect(
+    useCallback(() => {
+      let cancelled = false;
+      listMyFamilies()
+        .then((list) => {
+          if (cancelled) return;
+          setFamilies(list);
+          if (list.length > 0 && !list.some((f) => f.id === activeFamilyId)) {
+            setActiveFamily(list[0].id);
+          }
+        })
+        .catch(() => {});
+      return () => {
+        cancelled = true;
+      };
+    }, [activeFamilyId, setActiveFamily]),
+  );
 
   useEffect(() => {
     if (!activeFamilyId) {
