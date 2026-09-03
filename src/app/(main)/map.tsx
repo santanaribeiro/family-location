@@ -1,7 +1,7 @@
 import Constants, { ExecutionEnvironment } from 'expo-constants';
 import type { LocationSubscription } from 'expo-location';
 import { useEffect, useRef, useState } from 'react';
-import { Platform, View } from 'react-native';
+import { View } from 'react-native';
 
 import { Screen, Text } from '@/components';
 import FamilyMap from '@/components/FamilyMap';
@@ -15,8 +15,8 @@ import {
 import { startBackgroundUpdates, stopBackgroundUpdates } from '@/services/location/background';
 import { useFamilyStore } from '@/stores/familyStore';
 
+// No Expo Go o react-native-maps trava; no web e no dev build o mapa funciona.
 const isExpoGo = Constants.executionEnvironment === ExecutionEnvironment.StoreClient;
-const nativeMapAvailable = !isExpoGo && Platform.OS !== 'web';
 
 export default function MapScreen() {
   const { activeFamilyId } = useFamilyStore();
@@ -47,7 +47,7 @@ export default function MapScreen() {
   }, [activeFamilyId]);
 
   useEffect(() => {
-    if (!nativeMapAvailable) return;
+    if (isExpoGo) return;
     let active = true;
     (async () => {
       const current = await getCurrent();
@@ -64,7 +64,6 @@ export default function MapScreen() {
     };
   }, []);
 
-  // No Expo Go o react-native-maps trava — mostramos um aviso (no dev build renderiza o mapa).
   if (isExpoGo) {
     return (
       <Screen>
@@ -73,7 +72,7 @@ export default function MapScreen() {
             Mapa
           </Text>
           <Text variant="muted" className="text-center">
-            O mapa e o GPS rodam no dev build (EAS), não no Expo Go.
+            O mapa e o GPS rodam no dev build (EAS) ou no navegador — não no Expo Go.
           </Text>
         </View>
       </Screen>
