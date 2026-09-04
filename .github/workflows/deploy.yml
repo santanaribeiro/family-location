@@ -20,6 +20,8 @@ jobs:
   migrate:
     name: Apply Supabase migrations
     runs-on: ubuntu-latest
+    env:
+      SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
     steps:
       - uses: actions/checkout@v4
 
@@ -27,7 +29,7 @@ jobs:
         run: sudo apt-get update && sudo apt-get install -y postgresql-client
 
       - name: Apply pending migrations
-        if: ${{ secrets.SUPABASE_DB_URL != '' }}
+        if: ${{ env.SUPABASE_DB_URL != '' }}
         env:
           DATABASE_URL: ${{ secrets.SUPABASE_DB_URL }}
         run: |
@@ -37,13 +39,15 @@ jobs:
           done
 
       - name: Secret not configured
-        if: ${{ secrets.SUPABASE_DB_URL == '' }}
+        if: ${{ env.SUPABASE_DB_URL == '' }}
         run: echo "SUPABASE_DB_URL não configurado — pulando migrations (configure o secret pra ativar)."
 
   build:
     name: Trigger EAS build (Android preview)
     needs: migrate
     runs-on: ubuntu-latest
+    env:
+      EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
     steps:
       - uses: actions/checkout@v4
 
@@ -56,15 +60,15 @@ jobs:
         run: npm ci
 
       - uses: expo/expo-github-action@v8
-        if: ${{ secrets.EXPO_TOKEN != '' }}
+        if: ${{ env.EXPO_TOKEN != '' }}
         with:
           eas-version: latest
           token: ${{ secrets.EXPO_TOKEN }}
 
       - name: Trigger build
-        if: ${{ secrets.EXPO_TOKEN != '' }}
+        if: ${{ env.EXPO_TOKEN != '' }}
         run: eas build --platform android --profile preview --non-interactive --no-wait
 
       - name: Secret not configured
-        if: ${{ secrets.EXPO_TOKEN == '' }}
+        if: ${{ env.EXPO_TOKEN == '' }}
         run: echo "EXPO_TOKEN não configurado — pulando build (configure o secret pra ativar)."
