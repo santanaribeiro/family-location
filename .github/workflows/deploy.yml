@@ -35,6 +35,13 @@ jobs:
         env:
           DATABASE_URL: ${{ secrets.SUPABASE_DB_URL }}
         run: |
+          case "$DATABASE_URL" in
+            postgres://*|postgresql://*) ;;
+            *)
+              echo "::error::SUPABASE_DB_URL não começa com postgres:// ou postgresql:// — confira se o secret tem a URI (aba 'URI' do Connect no Supabase), não o comando psql nem aspas sobrando."
+              exit 1
+              ;;
+          esac
           for f in $(ls supabase/migrations/*.sql | sort); do
             echo "Aplicando $f"
             psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f "$f"
