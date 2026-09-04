@@ -1,0 +1,6 @@
+# Config mínima do Supabase CLI, só para os defaults de deploy da Edge Function.
+# O projeto nunca usou `supabase link`/CLI para migrations (aplicadas manualmente
+# no SQL Editor) — este arquivo não muda isso, é só metadado de deploy de function.
+
+[functions.send-push]
+verify_jwt = false

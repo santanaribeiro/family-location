@@ -2,7 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import BottomSheet, { BottomSheetScrollView } from '@gorhom/bottom-sheet';
 import Constants, { ExecutionEnvironment } from 'expo-constants';
 import type { LocationSubscription } from 'expo-location';
-import { useFocusEffect } from 'expo-router';
+import { useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, Platform, Pressable, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -29,6 +29,7 @@ import {
   type MemberLocation,
 } from '@/services/location';
 import { isBackgroundActive, startBackgroundUpdates } from '@/services/location/background';
+import { registerForPush, subscribeNotificationTap } from '@/services/notifications';
 import { listPlaces, subscribePlaces } from '@/services/places';
 import { useChatStore } from '@/stores/chatStore';
 import { useFamilyStore } from '@/stores/familyStore';
@@ -58,6 +59,7 @@ export default function MapScreen() {
   const { activeFamilyId, setActiveFamily } = useFamilyStore();
   const { user } = useAuth();
   const insets = useSafeAreaInsets();
+  const router = useRouter();
 
   const [families, setFamilies] = useState<FamilyWithRole[]>([]);
   const [allMembers, setAllMembers] = useState<MemberWithUser[]>([]);
@@ -206,6 +208,19 @@ export default function MapScreen() {
     void upsertBatteryStatus();
     return watchBattery();
   }, []);
+
+  useEffect(() => {
+    if (isExpoGo) return;
+    void registerForPush();
+    return subscribeNotificationTap((data) => {
+      if (data.screen === 'presence') {
+        setSheetTab('presenca');
+        bottomSheetRef.current?.snapToIndex(0);
+      } else if (data.screen === 'family') {
+        router.push('/family');
+      }
+    });
+  }, [router]);
 
   const listRows = useMemo(() => {
     const rows = allMembers.map((member) => {

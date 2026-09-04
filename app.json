@@ -49,6 +49,12 @@
         {
           "cameraPermission": "O Family Location usa a câmera para ler o QR code de convite de uma família."
         }
+      ],
+      [
+        "expo-notifications",
+        {
+          "color": "#BFBFBF"
+        }
       ]
     ],
     "experiments": {
