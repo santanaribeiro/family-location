@@ -32,11 +32,19 @@ where m.id = ranked.id
   and ranked.rn > 1;
 
 -- 2) Garante a constraint de unicidade (idempotente).
+--    Checa pg_constraint diretamente em vez de capturar a exceção: o índice
+--    implícito da unique constraint colide como `duplicate_table` (42P07), não
+--    `duplicate_object` (42710), então o `exception when duplicate_object`
+--    antigo não pegava o erro numa segunda execução.
 do $$
 begin
-  alter table public.family_group_members
-    add constraint family_group_members_family_group_id_user_id_key unique (family_group_id, user_id);
-exception
-  when duplicate_object then null;
+  if not exists (
+    select 1 from pg_constraint
+    where conname = 'family_group_members_family_group_id_user_id_key'
+      and conrelid = 'public.family_group_members'::regclass
+  ) then
+    alter table public.family_group_members
+      add constraint family_group_members_family_group_id_user_id_key unique (family_group_id, user_id);
+  end if;
 end
 $$;
