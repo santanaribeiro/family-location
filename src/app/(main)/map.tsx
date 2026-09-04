@@ -282,7 +282,6 @@ export default function MapScreen() {
     <View className="flex-1">
       <FamilyMap
         members={located}
-        deviceStatuses={deviceStatuses}
         initialRegion={initialRegion}
         own={own}
         focus={focusTarget}

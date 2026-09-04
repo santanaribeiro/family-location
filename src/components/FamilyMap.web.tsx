@@ -1,19 +1,15 @@
-import { Ionicons } from '@expo/vector-icons';
 import { AdvancedMarker, APIProvider, Circle, Map, useMap } from '@vis.gl/react-google-maps';
-import { Fragment, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { View } from 'react-native';
 
-import { BatteryBadge } from '@/components/BatteryBadge';
 import { Screen, Text } from '@/components';
 import type { MemberLocation } from '@/services/location';
 import { colors } from '@/theme';
-import type { SavedPlace, UserDeviceStatus } from '@/types/database';
+import type { SavedPlace } from '@/types/database';
 import { initials } from '@/utils/avatar';
-import { placeIconName } from '@/utils/placeIcons';
 
 export interface FamilyMapProps {
   members: MemberLocation[];
-  deviceStatuses?: UserDeviceStatus[];
   initialRegion: { latitude: number; longitude: number; latitudeDelta: number; longitudeDelta: number };
   own?: { latitude: number; longitude: number } | null;
   /** Centraliza o mapa nesse ponto sempre que `key` mudar (ex.: membro selecionado na lista). */
@@ -83,91 +79,44 @@ function Focus({ focus }: { focus?: { latitude: number; longitude: number; key: 
   return null;
 }
 
-function AvatarPin({ member, battery }: { member: MemberLocation; battery?: UserDeviceStatus }) {
+function AvatarPin({ member }: { member: MemberLocation }) {
   const [failed, setFailed] = useState(false);
   const url = member.user?.avatar_url;
   const showImage = url && !failed;
   return (
-    <div style={{ position: 'relative' }}>
-      <div
-        style={{
-          width: 44,
-          height: 44,
-          borderRadius: '50%',
-          border: `2px solid ${colors.neutral[400]}`,
-          overflow: 'hidden',
-          boxShadow: '0 2px 6px rgba(0,0,0,0.35)',
-          background: colors.brand[500],
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-        }}
-      >
-        {showImage ? (
-          <img
-            src={url}
-            alt=""
-            referrerPolicy="no-referrer"
-            style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-            onError={() => setFailed(true)}
-          />
-        ) : (
-          <span style={{ color: colors.neutral[100], fontWeight: 700, fontSize: 14 }}>
-            {initials(member.user?.name ?? member.user?.email)}
-          </span>
-        )}
-      </div>
-      {battery?.battery_level != null ? (
-        <div
-          style={{
-            position: 'absolute',
-            bottom: -6,
-            right: -8,
-            background: colors.neutral[900],
-            border: `1.5px solid ${colors.neutral[700]}`,
-            borderRadius: 9999,
-            padding: '2px 6px',
-            display: 'flex',
-            alignItems: 'center',
-          }}
-        >
-          <BatteryBadge level={battery.battery_level} state={battery.battery_state} compact />
-        </div>
-      ) : null}
-    </div>
-  );
-}
-
-function PlacePin({ place }: { place: SavedPlace }) {
-  return (
     <div
       style={{
-        width: 36,
-        height: 36,
+        width: 44,
+        height: 44,
         borderRadius: '50%',
-        border: `2px solid ${colors.neutral[300]}`,
+        border: `2px solid ${colors.neutral[400]}`,
+        overflow: 'hidden',
         boxShadow: '0 2px 6px rgba(0,0,0,0.35)',
-        background: colors.neutral[700],
+        background: colors.brand[500],
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
       }}
     >
-      <Ionicons name={placeIconName(place.icon)} size={16} color={colors.neutral[100]} />
+      {showImage ? (
+        <img
+          src={url}
+          alt=""
+          referrerPolicy="no-referrer"
+          style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+          onError={() => setFailed(true)}
+        />
+      ) : (
+        <span style={{ color: colors.neutral[100], fontWeight: 700, fontSize: 14 }}>
+          {initials(member.user?.name ?? member.user?.email)}
+        </span>
+      )}
     </div>
   );
 }
 
 /** Mapa na web via Google Maps JavaScript API, com avatares dos membros. */
-export default function FamilyMap({
-  members,
-  deviceStatuses = [],
-  initialRegion,
-  own,
-  focus,
-  places = [],
-  onPickLocation,
-}: FamilyMapProps) {
+export default function FamilyMap({ members, initialRegion, own, focus, places = [], onPickLocation }: FamilyMapProps) {
   if (!apiKey) {
     return (
       <Screen>
@@ -188,6 +137,8 @@ export default function FamilyMap({
       <APIProvider apiKey={apiKey}>
         <Map
           mapId={mapId}
+          colorScheme="DARK"
+          disableDefaultUI
           style={{ width: '100%', height: '100%' }}
           defaultCenter={{ lat: initialRegion.latitude, lng: initialRegion.longitude }}
           defaultZoom={13}
@@ -199,20 +150,16 @@ export default function FamilyMap({
           <Recenter own={own} />
           <Focus focus={focus} />
           {places.map((place) => (
-            <Fragment key={place.id}>
-              <AdvancedMarker position={{ lat: place.latitude, lng: place.longitude }} title={place.name}>
-                <PlacePin place={place} />
-              </AdvancedMarker>
-              <Circle
-                center={{ lat: place.latitude, lng: place.longitude }}
-                radius={place.radius}
-                fillColor={colors.neutral[300]}
-                fillOpacity={0.18}
-                strokeColor={colors.neutral[400]}
-                strokeOpacity={0.8}
-                strokeWeight={1}
-              />
-            </Fragment>
+            <Circle
+              key={place.id}
+              center={{ lat: place.latitude, lng: place.longitude }}
+              radius={place.radius}
+              fillColor={colors.neutral[300]}
+              fillOpacity={0.18}
+              strokeColor={colors.neutral[400]}
+              strokeOpacity={0.8}
+              strokeWeight={1}
+            />
           ))}
           {members.map((member) => (
             <AdvancedMarker
@@ -220,7 +167,7 @@ export default function FamilyMap({
               position={{ lat: member.latitude, lng: member.longitude }}
               title={member.user?.name ?? member.user?.email ?? 'Membro'}
             >
-              <AvatarPin member={member} battery={deviceStatuses.find((d) => d.user_id === member.user_id)} />
+              <AvatarPin member={member} />
             </AdvancedMarker>
           ))}
         </Map>

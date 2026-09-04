@@ -75,6 +75,8 @@ export default function HistoryMap({ points, selectedIndex }: HistoryMapProps) {
       <APIProvider apiKey={apiKey}>
         <Map
           mapId={mapId}
+          colorScheme="DARK"
+          disableDefaultUI
           style={{ width: '100%', height: '100%' }}
           defaultCenter={{ lat: -23.5505, lng: -46.6333 }}
           defaultZoom={13}

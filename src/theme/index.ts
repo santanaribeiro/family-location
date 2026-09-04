@@ -1,10 +1,12 @@
 import { colors, semanticColors } from './colors';
+import { darkMapStyle } from './mapStyle';
 import { radius } from './radius';
 import { shadows } from './shadows';
 import { spacing } from './spacing';
 import { fontFamily, fontSize, fontWeight, lineHeight } from './typography';
 
 export { colors, semanticColors } from './colors';
+export { darkMapStyle } from './mapStyle';
 export { radius } from './radius';
 export { shadows } from './shadows';
 export { spacing } from './spacing';
@@ -27,6 +29,7 @@ export const theme = {
   fontWeight,
   lineHeight,
   shadows,
+  darkMapStyle,
 } as const;
 
 export type Theme = typeof theme;

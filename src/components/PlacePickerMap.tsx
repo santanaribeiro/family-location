@@ -2,7 +2,7 @@ import { useEffect, useRef } from 'react';
 import { View } from 'react-native';
 import MapView, { Circle, Marker } from 'react-native-maps';
 
-import { colors } from '@/theme';
+import { colors, darkMapStyle } from '@/theme';
 
 export interface PlacePickerMapProps {
   latitude: number;
@@ -28,6 +28,11 @@ export default function PlacePickerMap({ latitude, longitude, radius, onChangeCo
         ref={mapRef}
         style={{ flex: 1 }}
         initialRegion={{ latitude, longitude, latitudeDelta: 0.01, longitudeDelta: 0.01 }}
+        customMapStyle={darkMapStyle}
+        showsMyLocationButton={false}
+        showsCompass={false}
+        zoomControlEnabled={false}
+        toolbarEnabled={false}
         onPress={(e) => onChangeCoordinate(e.nativeEvent.coordinate)}
       >
         <Marker
