@@ -8,8 +8,10 @@ name: Deploy
 #
 # Precisa de 2 secrets no repositório (Settings → Secrets and variables →
 # Actions), nenhum dos dois configurável por aqui — ver aviso no PR/commit:
-#   SUPABASE_DB_URL  — connection string do Postgres (Supabase Dashboard →
-#                       Project Settings → Database → Connection string → URI)
+#   SUPABASE_DB_URL  — connection string do Postgres, modo "Session pooler"
+#                       (Supabase Dashboard → Connect → Session pooler → URI).
+#                       Não usar a conexão direta (db.<ref>.supabase.co): ela
+#                       é IPv6-only e os runners do GitHub Actions são IPv4.
 #   EXPO_TOKEN       — token de acesso da conta Expo/EAS (`eas whoami` →
 #                       expo.dev → Account settings → Access tokens)
 on:
