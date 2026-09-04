@@ -3,7 +3,7 @@ import { View } from 'react-native';
 import MapView, { Marker, Polyline } from 'react-native-maps';
 
 import type { HistoryPoint } from '@/services/history';
-import { colors } from '@/theme';
+import { colors, darkMapStyle } from '@/theme';
 
 export interface HistoryMapProps {
   points: HistoryPoint[];
@@ -64,7 +64,16 @@ export default function HistoryMap({ points, selectedIndex }: HistoryMapProps) {
   const end = points[points.length - 1];
 
   return (
-    <MapView ref={mapRef} style={{ flex: 1 }} initialRegion={region}>
+    <MapView
+      ref={mapRef}
+      style={{ flex: 1 }}
+      initialRegion={region}
+      customMapStyle={darkMapStyle}
+      showsMyLocationButton={false}
+      showsCompass={false}
+      zoomControlEnabled={false}
+      toolbarEnabled={false}
+    >
       {points.length > 1 ? (
         <Polyline
           coordinates={points.map((p) => ({ latitude: p.latitude, longitude: p.longitude }))}

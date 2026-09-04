@@ -5,6 +5,8 @@ const expoConfig = require("eslint-config-expo/flat");
 module.exports = defineConfig([
   expoConfig,
   {
-    ignores: ["dist/*"],
+    // supabase/functions roda em Deno (Edge Functions) — runtime e globais
+    // diferentes do resto do projeto (Node/React Native), fora do escopo deste lint.
+    ignores: ["dist/*", "supabase/functions/**"],
   }
 ]);

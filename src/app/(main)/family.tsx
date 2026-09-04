@@ -101,13 +101,15 @@ export default function FamilyScreen() {
                       >
                         <Ionicons name="time-outline" size={18} color={colors.neutral[100]} />
                       </Pressable>
-                      <Pressable
-                        onPress={() => setInviteFor(family)}
-                        className="h-9 w-9 items-center justify-center rounded-full bg-neutral-700 active:bg-neutral-600"
-                        accessibilityLabel="Compartilhar convite"
-                      >
-                        <Ionicons name="share-social-outline" size={18} color={colors.neutral[100]} />
-                      </Pressable>
+                      {family.role !== 'member' ? (
+                        <Pressable
+                          onPress={() => setInviteFor(family)}
+                          className="h-9 w-9 items-center justify-center rounded-full bg-neutral-700 active:bg-neutral-600"
+                          accessibilityLabel="Compartilhar convite"
+                        >
+                          <Ionicons name="share-social-outline" size={18} color={colors.neutral[100]} />
+                        </Pressable>
+                      ) : null}
                       <Pressable
                         onPress={() => confirmLeave(family)}
                         className="h-9 w-9 items-center justify-center rounded-full bg-neutral-700 active:bg-neutral-600"

@@ -41,6 +41,7 @@ export default function PlacePickerMap({ latitude, longitude, radius, onChangeCo
       <APIProvider apiKey={apiKey}>
         <Map
           mapId={mapId}
+          colorScheme="DARK"
           style={{ width: '100%', height: '100%' }}
           defaultCenter={{ lat: latitude, lng: longitude }}
           defaultZoom={15}
