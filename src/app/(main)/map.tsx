@@ -4,7 +4,7 @@ import Constants, { ExecutionEnvironment } from 'expo-constants';
 import type { LocationSubscription } from 'expo-location';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { ActivityIndicator, Platform, Pressable, View } from 'react-native';
+import { ActivityIndicator, Linking, Platform, Pressable, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Button, Screen, Text } from '@/components';
@@ -28,7 +28,12 @@ import {
   watchAndSync,
   type MemberLocation,
 } from '@/services/location';
-import { isBackgroundActive, startBackgroundUpdates } from '@/services/location/background';
+import {
+  getLastBackgroundRun,
+  isBackgroundActive,
+  startBackgroundUpdates,
+  type BackgroundRun,
+} from '@/services/location/background';
 import { registerForPush, subscribeNotificationTap } from '@/services/notifications';
 import { listPlaces, subscribePlaces } from '@/services/places';
 import { useChatStore } from '@/stores/chatStore';
@@ -36,6 +41,7 @@ import { useFamilyStore } from '@/stores/familyStore';
 import { colors } from '@/theme';
 import type { SavedPlace, UserDeviceStatus } from '@/types/database';
 import { notify } from '@/utils/alert';
+import { timeAgo } from '@/utils/time';
 
 const isExpoGo = Constants.executionEnvironment === ExecutionEnvironment.StoreClient;
 const supportsBackground = Platform.OS !== 'web' && !isExpoGo;
@@ -68,6 +74,7 @@ export default function MapScreen() {
   const [places, setPlaces] = useState<SavedPlace[]>([]);
   const [own, setOwn] = useState<{ latitude: number; longitude: number } | null>(null);
   const [backgroundOn, setBackgroundOn] = useState(false);
+  const [lastRun, setLastRun] = useState<BackgroundRun | null>(null);
   const [focusTarget, setFocusTarget] = useState<{ latitude: number; longitude: number; key: number } | null>(
     null,
   );
@@ -201,6 +208,7 @@ export default function MapScreen() {
   useEffect(() => {
     if (!supportsBackground) return;
     isBackgroundActive().then(setBackgroundOn).catch(() => {});
+    getLastBackgroundRun().then(setLastRun).catch(() => {});
   }, []);
 
   useEffect(() => {
@@ -251,10 +259,33 @@ export default function MapScreen() {
     bottomSheetRef.current?.snapToIndex(0);
   }
 
+  /**
+   * Resumo legível da última execução em 2º plano. Sem isso não há como saber se a
+   * task rodou e falhou (ex.: sessão expirada) ou se nunca chegou a rodar.
+   */
+  const backgroundStatusLabel = useMemo(() => {
+    if (!lastRun) return 'Aguardando a primeira sincronização em 2º plano.';
+    const when = timeAgo(lastRun.at);
+    if (lastRun.ok) return `Última sincronização em 2º plano ${when}.`;
+    return `Falha ${when}: ${lastRun.reason ?? 'motivo desconhecido'}.`;
+  }, [lastRun]);
+
+  /**
+   * Fabricantes Android matam o serviço de localização por "otimização de bateria" —
+   * a causa mais comum de a posição congelar com o app fechado. Abre a tela do
+   * sistema onde dá para isentar o app.
+   */
+  function openBatterySettings() {
+    Linking.sendIntent('android.settings.IGNORE_BATTERY_OPTIMIZATION_SETTINGS').catch(() => {
+      void Linking.openSettings();
+    });
+  }
+
   async function enableBackground() {
     try {
       const ok = await startBackgroundUpdates();
       setBackgroundOn(ok);
+      getLastBackgroundRun().then(setLastRun).catch(() => {});
       if (!ok) {
         notify(
           'Localização',
@@ -398,15 +429,32 @@ export default function MapScreen() {
               )}
 
               {supportsBackground ? (
-                <View className="mt-md">
+                <View className="mt-md gap-sm">
                   {backgroundOn ? (
-                    <View className="flex-row items-center gap-sm rounded-lg bg-neutral-800 px-md py-md">
-                      <Ionicons name="location" size={18} color={colors.success[500]} />
-                      <Text variant="muted">Compartilhando sua localização o tempo todo.</Text>
+                    <View className="gap-xs rounded-lg bg-neutral-800 px-md py-md">
+                      <View className="flex-row items-center gap-sm">
+                        <Ionicons name="location" size={18} color={colors.success[500]} />
+                        <Text variant="muted">Compartilhando sua localização o tempo todo.</Text>
+                      </View>
+                      <Text variant="caption">{backgroundStatusLabel}</Text>
                     </View>
                   ) : (
-                    <Button title="Compartilhar em 2º plano" onPress={enableBackground} />
+                    <View className="gap-sm rounded-lg bg-neutral-800 px-md py-md">
+                      <Text variant="caption">
+                        Sua localização só é atualizada com o app aberto. Ligue o compartilhamento em 2º
+                        plano para a família continuar te vendo com o app fechado.
+                      </Text>
+                      <Button title="Compartilhar em 2º plano" onPress={enableBackground} />
+                    </View>
                   )}
+
+                  {backgroundOn && Platform.OS === 'android' ? (
+                    <Pressable onPress={openBatterySettings}>
+                      <Text variant="caption" className="underline">
+                        Parando com o app fechado? Desative a otimização de bateria para o app.
+                      </Text>
+                    </Pressable>
+                  ) : null}
                 </View>
               ) : null}
             </>

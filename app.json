@@ -56,7 +56,8 @@
         {
           "color": "#BFBFBF"
         }
-      ]
+      ],
+      "expo-background-task"
     ],
     "experiments": {
       "typedRoutes": true,

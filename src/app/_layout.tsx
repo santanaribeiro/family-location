@@ -1,10 +1,4 @@
 import '@/global.css';
-// Registra a task de localização em segundo plano (TaskManager.defineTask) o mais cedo
-// possível. Precisa rodar aqui — na raiz, sempre carregada — e não só quando a tela do
-// mapa é aberta: no boot "headless" (app fechado, o SO acorda o JS só pra rodar a task),
-// nenhuma navegação acontece, e uma tela de rota carregada sob demanda (lazy) nunca seria
-// importada, deixando a task sem handler registrado.
-import '@/services/location/background';
 
 import { Stack, useRouter, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
@@ -13,6 +7,12 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { AuthProvider, useAuth } from '@/services/auth';
+// Importar aqui também registra as tasks de 2º plano (TaskManager.defineTask, no escopo
+// do módulo) o mais cedo possível. Precisa ser na raiz, sempre carregada — e não só na
+// tela do mapa: no boot "headless" (app fechado, o SO acorda o JS só pra rodar a task)
+// nenhuma navegação acontece, e uma rota carregada sob demanda nunca seria importada,
+// deixando a task sem handler registrado.
+import { ensureBackgroundUpdates } from '@/services/location/background';
 import { colors } from '@/theme';
 
 export default function RootLayout() {
@@ -44,6 +44,14 @@ function RootNavigator() {
       router.replace('/map');
     }
   }, [session, loading, configured, segments, router]);
+
+  // Religa o compartilhamento em 2º plano a cada abertura do app: o serviço de
+  // localização não sobrevive ao encerramento do processo, e sem este re-arme ele
+  // só voltava quando o usuário tocava de novo no botão da tela do mapa.
+  useEffect(() => {
+    if (!session) return;
+    void ensureBackgroundUpdates();
+  }, [session]);
 
   return (
     <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.neutral[900] } }} />
