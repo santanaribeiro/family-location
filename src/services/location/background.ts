@@ -21,6 +21,16 @@ const LAST_RUN_KEY = 'location.lastBackgroundRun';
 /** Mínimo aceito pelo WorkManager no Android. */
 const PERIODIC_MINUTES = 15;
 
+/**
+ * Idade máxima de uma posição em cache aceita pela task periódica.
+ *
+ * Fica bem abaixo do intervalo da task de propósito: `save_location` grava o
+ * instante em que a posição foi *medida*, então aceitar um cache de 15 min fazia
+ * o "atualizado há X" já nascer com 15 min de atraso — somados ao intervalo,
+ * quase 30. Com 2 min, o custo é ligar o GPS com mais frequência no app fechado.
+ */
+const LAST_KNOWN_MAX_AGE_MS = 2 * 60_000;
+
 export interface BackgroundRun {
   at: string;
   /** `service` = serviço contínuo; `periodic` = WorkManager (cobre o app fechado). */
@@ -150,7 +160,7 @@ TaskManager.defineTask(PERIODIC_SYNC_TASK, async () => {
     // `getLastKnownPositionAsync` não liga o GPS; só cai para uma leitura nova
     // quando não há nada recente em cache (ex.: processo recém-recriado).
     const loc =
-      (await Location.getLastKnownPositionAsync({ maxAge: PERIODIC_MINUTES * 60_000 })) ??
+      (await Location.getLastKnownPositionAsync({ maxAge: LAST_KNOWN_MAX_AGE_MS })) ??
       (await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced }));
     if (loc) await push(loc, 'periodic');
 

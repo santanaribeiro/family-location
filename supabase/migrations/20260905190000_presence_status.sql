@@ -50,13 +50,25 @@ begin
       m.uid,
       ul.latitude,
       ul.longitude,
-      ucp.saved_place_id as place_id,
-      sp.name            as sp_name,
-      sp.icon            as sp_icon
+      sp.id   as place_id,
+      sp.name as sp_name,
+      sp.icon as sp_icon
     from members m
     left join public.user_locations ul      on ul.user_id  = m.uid
     left join public.user_current_place ucp on ucp.user_id = m.uid
-    left join public.saved_places sp        on sp.id       = ucp.saved_place_id
+    -- O filtro por family_group_id aqui não é cosmético: user_current_place é
+    -- global por usuário (uma linha só, sem família) e o trigger de geofence
+    -- escolhe o local mais próximo entre TODAS as famílias da pessoa. Sem este
+    -- filtro, e sendo esta função `security definer` (que ignora o RLS de
+    -- saved_places), o nome de um local de outra família vazava para membros
+    -- que não podem vê-lo.
+    --
+    -- Efeito colateral aceito: quem estiver dentro de locais de duas famílias ao
+    -- mesmo tempo só é reportado na família que o trigger elegeu; nas demais
+    -- aparece como "Parado". Resolver isso exigiria um estado por família.
+    left join public.saved_places sp
+      on sp.id = ucp.saved_place_id
+     and sp.family_group_id = p_family_group_id
   )
   select
     b.uid,
