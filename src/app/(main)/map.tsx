@@ -36,6 +36,7 @@ import {
 } from '@/services/location/background';
 import { registerForPush, subscribeNotificationTap } from '@/services/notifications';
 import { listPlaces, subscribePlaces } from '@/services/places';
+import { getFamilyPresence, type MemberPresence } from '@/services/presence';
 import { useChatStore } from '@/stores/chatStore';
 import { useFamilyStore } from '@/stores/familyStore';
 import { colors } from '@/theme';
@@ -71,6 +72,7 @@ export default function MapScreen() {
   const [allMembers, setAllMembers] = useState<MemberWithUser[]>([]);
   const [located, setLocated] = useState<MemberLocation[]>([]);
   const [deviceStatuses, setDeviceStatuses] = useState<UserDeviceStatus[]>([]);
+  const [presence, setPresence] = useState<MemberPresence[]>([]);
   const [places, setPlaces] = useState<SavedPlace[]>([]);
   const [own, setOwn] = useState<{ latitude: number; longitude: number } | null>(null);
   const [backgroundOn, setBackgroundOn] = useState(false);
@@ -110,6 +112,7 @@ export default function MapScreen() {
       setAllMembers([]);
       setLocated([]);
       setDeviceStatuses([]);
+      setPresence([]);
       setMembersLoading(false);
       return;
     }
@@ -122,10 +125,17 @@ export default function MapScreen() {
         if (cancelled) return;
         setAllMembers(membersList);
         const ids = membersList.map((m) => m.user_id);
-        const [locations, statuses] = await Promise.all([getFamilyLocations(activeFamilyId), getDeviceStatuses(ids)]);
+        const [locations, statuses, presences] = await Promise.all([
+          getFamilyLocations(activeFamilyId),
+          getDeviceStatuses(ids),
+          // Presença é enriquecimento: se a RPC falhar (ex.: migration ainda não
+          // aplicada), a lista continua aparecendo sem a linha de status.
+          getFamilyPresence(activeFamilyId).catch(() => [] as MemberPresence[]),
+        ]);
         if (cancelled) return;
         setLocated(locations);
         setDeviceStatuses(statuses);
+        setPresence(presences);
       } catch {
         // Falha silenciosa — o próximo refresh (realtime) tenta de novo.
       } finally {
@@ -234,8 +244,10 @@ export default function MapScreen() {
     const rows = allMembers.map((member) => {
       const location = located.find((l) => l.user_id === member.user_id);
       const battery = deviceStatuses.find((d) => d.user_id === member.user_id);
+      const memberPresence = presence.find((p) => p.userId === member.user_id) ?? null;
       return {
         key: member.user_id,
+        presence: memberPresence,
         name: member.user?.name ?? member.user?.email ?? 'Membro',
         avatarUrl: member.user?.avatar_url ?? null,
         recordedAt: location?.recorded_at ?? null,
@@ -248,7 +260,7 @@ export default function MapScreen() {
     });
     // Seu próprio usuário sempre primeiro; os demais mantêm a ordem de entrada na família.
     return rows.sort((a, b) => Number(b.isSelf) - Number(a.isSelf));
-  }, [allMembers, located, deviceStatuses, user?.id]);
+  }, [allMembers, located, deviceStatuses, presence, user?.id]);
 
   function focusOnMember(row: (typeof listRows)[number]) {
     if (row.latitude == null || row.longitude == null) {
@@ -420,6 +432,7 @@ export default function MapScreen() {
                       name={row.name}
                       avatarUrl={row.avatarUrl}
                       recordedAt={row.recordedAt}
+                      presence={row.presence}
                       batteryLevel={row.batteryLevel}
                       batteryState={row.batteryState}
                       onHistoryPress={() => setHistoryFor({ userId: row.key, name: row.name })}

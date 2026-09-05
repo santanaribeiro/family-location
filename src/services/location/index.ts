@@ -56,7 +56,9 @@ export async function watchAndSync(
 ): Promise<Location.LocationSubscription | null> {
   if (!(await requestForeground())) return null;
   return Location.watchPositionAsync(
-    { accuracy: Location.Accuracy.Balanced, timeInterval: 15000, distanceInterval: 25 },
+    // `distanceInterval: 0` desliga o filtro de deslocamento — combinado por E com o
+    // intervalo de tempo, qualquer valor > 0 congelava quem estivesse parado.
+    { accuracy: Location.Accuracy.Balanced, timeInterval: 15000, distanceInterval: 0 },
     (loc) => {
       onUpdate?.(loc);
       void saveLocation(loc);

@@ -67,6 +67,40 @@ export async function listPlaceEvents(familyId: string, cursor?: string | null):
   return { items, nextCursor };
 }
 
+export type PresenceState = 'at_place' | 'stopped' | 'moving' | 'unknown';
+
+export interface MemberPresence {
+  userId: string;
+  state: PresenceState;
+  placeName: string | null;
+  placeIcon: string | null;
+  /** Desde quando está nesse estado (chegada no local ou início da parada). */
+  since: string | null;
+}
+
+/**
+ * Status de cada membro: em qual local salvo está, parado desde quando, ou em
+ * deslocamento. Ver supabase/migrations/20260905190000_presence_status.sql —
+ * o cálculo mora no banco para não baixar o histórico de cada membro no client.
+ */
+export async function getFamilyPresence(familyId: string): Promise<MemberPresence[]> {
+  const { data, error } = await client().rpc('get_family_presence', { p_family_group_id: familyId });
+  if (error) throw error;
+  return ((data ?? []) as {
+    user_id: string;
+    state: PresenceState;
+    place_name: string | null;
+    place_icon: string | null;
+    since: string | null;
+  }[]).map((row) => ({
+    userId: row.user_id,
+    state: row.state,
+    placeName: row.place_name,
+    placeIcon: row.place_icon,
+    since: row.since,
+  }));
+}
+
 /** Assina mudanças em user_current_place e place_events (Realtime). */
 export function subscribePresence(onChange: () => void): () => void {
   const c = client();

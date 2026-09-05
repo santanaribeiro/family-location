@@ -32,14 +32,18 @@ export interface BackgroundRun {
 /**
  * Opções do serviço contínuo.
  *
- * `Accuracy.High` em vez de `Balanced`: Balanced usa só rede/celular, e a posição
- * grosseira que ele devolve raramente vencia o filtro de 50 m — o mapa ficava
- * parado por horas mesmo com o serviço rodando. O filtro também caiu para 25 m.
+ * `Accuracy.High` em vez de `Balanced`: Balanced usa só rede/celular e devolve uma
+ * posição grosseira demais para um app de localização familiar.
+ *
+ * `distanceInterval: 0` desliga o filtro de deslocamento: no Android ele vira
+ * `setMinUpdateDistanceMeters` e é combinado com o intervalo de tempo por E, então
+ * qualquer valor > 0 fazia quem estivesse parado nunca reportar. Com 0, a
+ * atualização é puramente temporal — a cada 60 s, mexendo-se ou não.
  */
 const LOCATION_OPTIONS: Location.LocationTaskOptions = {
   accuracy: Location.Accuracy.High,
   timeInterval: 60_000,
-  distanceInterval: 25,
+  distanceInterval: 0,
   // iOS: `true` autoriza o sistema a pausar as atualizações por tempo indeterminado.
   pausesUpdatesAutomatically: false,
   showsBackgroundLocationIndicator: false,
