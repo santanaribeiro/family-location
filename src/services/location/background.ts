@@ -168,7 +168,16 @@ TaskManager.defineTask(PERIODIC_SYNC_TASK, async () => {
     // o app está de pé para religá-lo.
     await ensureBackgroundUpdates();
     return BackgroundTask.BackgroundTaskResult.Success;
-  } catch {
+  } catch (error) {
+    // Registrar aqui é o que torna visível uma falha da própria task (ex.: o
+    // getCurrentPositionAsync não conseguir uma leitura com o aparelho em Doze).
+    // Sem isso, o diagnóstico da tela ficava mudo exatamente no caso interessante.
+    await recordRun({
+      at: new Date().toISOString(),
+      source: 'periodic',
+      ok: false,
+      reason: error instanceof Error ? error.message : 'falha na task periódica',
+    });
     return BackgroundTask.BackgroundTaskResult.Failed;
   }
 });
@@ -192,10 +201,13 @@ async function setBackgroundPreferred(on: boolean): Promise<void> {
 
 /** Sobe (ou re-sobe) as duas tasks. Idempotente. */
 async function startTasks(): Promise<void> {
-  const started = await Location.hasStartedLocationUpdatesAsync(BACKGROUND_LOCATION_TASK).catch(() => false);
-  if (!started) {
-    await Location.startLocationUpdatesAsync(BACKGROUND_LOCATION_TASK, LOCATION_OPTIONS);
-  }
+  // Chama sempre, mesmo com a task já registrada: `startLocationUpdatesAsync` é o
+  // único caminho para aplicar opções novas (no nativo ela dispara `setOptions`,
+  // que faz stop + start do serviço). Como o registro da task sobrevive à
+  // atualização do APK, pular esta chamada mantinha as opções gravadas pela versão
+  // anterior — foi assim que o `distanceInterval` antigo continuou valendo depois
+  // de instalar a build que o zerou.
+  await Location.startLocationUpdatesAsync(BACKGROUND_LOCATION_TASK, LOCATION_OPTIONS);
   try {
     await BackgroundTask.registerTaskAsync(PERIODIC_SYNC_TASK, { minimumInterval: PERIODIC_MINUTES });
   } catch {
