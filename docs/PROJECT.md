@@ -99,7 +99,11 @@ A arquitetura deve, entretanto, evitar decisões que dificultem a implementaçã
 
 > **Nota (2026-09-03):** "Chat" e "Bateria dos membros" foram priorizados para a próxima leva de desenvolvimento
 > e já estão especificados em `docs/FEATURES_NEXT.md`, junto com duas features novas (convite por QR code e log
-> de auditoria da família). Os demais itens desta lista continuam fora de escopo por ora.
+> de auditoria da família).
+>
+> **Nota (2026-09-03, leva 2):** "Histórico completo de localização" também saiu desta lista — especificado em
+> `docs/FEATURES_NEXT_2.md`, junto com duas features novas (feed de presença/geofence, que completa o Geofence do
+> §2 nunca implementado, e resumo diário/semanal). Os demais itens desta lista continuam fora de escopo por ora.
 
 ---
 

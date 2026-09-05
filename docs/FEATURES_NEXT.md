@@ -394,6 +394,9 @@ app.
   contaminaria o escopo desta feature com a Fase 6 inteira do MVP original — melhor construir o chat v1 sem push
   e, quando a infra de push for feita (ela também é pré-requisito das notificações de entrada/saída de local, que
   já estão especificadas e ainda não implementadas), plugar o chat nela como consumidor a mais.
+  **Nota (2026-09-03):** essa infra já está especificada em `docs/FEATURES_NEXT_3.md` — mensagem nova de chat é
+  um candidato natural a próximo `type` no pipeline de lá (receita em `docs/FEATURES_NEXT_3.md §6`), ainda não
+  construído.
 
 ### Modelo de dados
 
