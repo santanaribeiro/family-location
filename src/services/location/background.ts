@@ -164,9 +164,14 @@ TaskManager.defineTask(PERIODIC_SYNC_TASK, async () => {
       (await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced }));
     if (loc) await push(loc, 'periodic');
 
-    // O serviço contínuo morre junto com o processo: aproveita esta janela em que
-    // o app está de pé para religá-lo.
-    await ensureBackgroundUpdates();
+    // Só re-registra a task periódica. Religar o serviço contínuo daqui é
+    // impossível: no nativo, `maybeStartForegroundService` desiste na hora quando
+    // `AppForegroundedSingleton.isForegrounded` é falso — e aqui, por definição, o
+    // app está em 2º plano. Pior, a chamada anterior a `ensureBackgroundUpdates`
+    // acabava executando `setOptions`, que faz stop + start das atualizações SEM
+    // recriar o serviço, degradando o que ainda estivesse de pé.
+    // O serviço contínuo só volta quando alguém abre o app.
+    await ensurePeriodicTask();
     return BackgroundTask.BackgroundTaskResult.Success;
   } catch (error) {
     // Registrar aqui é o que torna visível uma falha da própria task (ex.: o
@@ -199,7 +204,22 @@ async function setBackgroundPreferred(on: boolean): Promise<void> {
   }
 }
 
-/** Sobe (ou re-sobe) as duas tasks. Idempotente. */
+/** (Re)registra só a task periódica — seguro de chamar do contexto headless. */
+async function ensurePeriodicTask(): Promise<void> {
+  try {
+    await BackgroundTask.registerTaskAsync(PERIODIC_SYNC_TASK, { minimumInterval: PERIODIC_MINUTES });
+  } catch {
+    // WorkManager pode estar restrito pelo sistema (App Standby Bucket).
+  }
+}
+
+/**
+ * Sobe (ou re-sobe) as duas tasks. Idempotente.
+ *
+ * Só funciona por completo com o app em primeiro plano: o foreground service da
+ * localização não pode ser criado a partir do 2º plano (limitação do
+ * expo-location, ver `maybeStartForegroundService`).
+ */
 async function startTasks(): Promise<void> {
   // Chama sempre, mesmo com a task já registrada: `startLocationUpdatesAsync` é o
   // único caminho para aplicar opções novas (no nativo ela dispara `setOptions`,
@@ -208,12 +228,7 @@ async function startTasks(): Promise<void> {
   // anterior — foi assim que o `distanceInterval` antigo continuou valendo depois
   // de instalar a build que o zerou.
   await Location.startLocationUpdatesAsync(BACKGROUND_LOCATION_TASK, LOCATION_OPTIONS);
-  try {
-    await BackgroundTask.registerTaskAsync(PERIODIC_SYNC_TASK, { minimumInterval: PERIODIC_MINUTES });
-  } catch {
-    // WorkManager pode estar restrito pelo sistema; o serviço contínuo ainda cobre
-    // o caso do app apenas minimizado.
-  }
+  await ensurePeriodicTask();
 }
 
 /** Liga o compartilhamento contínuo. Pede permissões — chame a partir de uma ação do usuário. */

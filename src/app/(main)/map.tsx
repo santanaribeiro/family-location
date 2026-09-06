@@ -278,8 +278,18 @@ export default function MapScreen() {
   const backgroundStatusLabel = useMemo(() => {
     if (!lastRun) return 'Aguardando a primeira sincronização em 2º plano.';
     const when = timeAgo(lastRun.at);
-    if (lastRun.ok) return `Última sincronização em 2º plano ${when}.`;
-    return `Falha ${when}: ${lastRun.reason ?? 'motivo desconhecido'}.`;
+    if (!lastRun.ok) return `Falha ${when}: ${lastRun.reason ?? 'motivo desconhecido'}.`;
+
+    // Dizer qual mecanismo rodou é o que separa "o sistema matou o serviço" de
+    // "o serviço está vivo e o problema é outro" — sem isso o diagnóstico não
+    // distinguia os dois casos.
+    const origem = lastRun.source === 'service' ? 'serviço contínuo' : 'rede de segurança';
+    const minutos = (Date.now() - new Date(lastRun.at).getTime()) / 60_000;
+    // O serviço contínuo reporta a cada 60s: passar muito disso só acontece se o
+    // sistema o encerrou, e nesse caso só reabrir o app o recria.
+    const alerta =
+      minutos > 5 ? ' O sistema parece ter encerrado o serviço — veja a otimização de bateria.' : '';
+    return `Última sincronização ${when} (${origem}).${alerta}`;
   }, [lastRun]);
 
   /**
@@ -288,9 +298,11 @@ export default function MapScreen() {
    * sistema onde dá para isentar o app.
    */
   function openBatterySettings() {
-    Linking.sendIntent('android.settings.IGNORE_BATTERY_OPTIMIZATION_SETTINGS').catch(() => {
-      void Linking.openSettings();
-    });
+    // Abre a tela do próprio app em vez da lista global de otimização: é de lá que
+    // se chega tanto a "Bateria → Sem restrições" quanto às telas específicas do
+    // fabricante (autostart da Xiaomi, suspensão profunda da Samsung), que a lista
+    // global do Android nem sequer expõe.
+    void Linking.openSettings();
   }
 
   async function enableBackground() {
