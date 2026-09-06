@@ -17,6 +17,10 @@ export const PERIODIC_SYNC_TASK = 'family-location-periodic-sync';
 const PREF_KEY = 'location.backgroundEnabled';
 /** Resultado da última execução em 2º plano: é o que torna a falha visível. */
 const LAST_RUN_KEY = 'location.lastBackgroundRun';
+/** Versão das opções já aplicadas ao serviço — ver `startTasks`. */
+const OPTIONS_VERSION_KEY = 'location.optionsVersion';
+/** Incremente ao mudar `LOCATION_OPTIONS`, senão o serviço mantém as opções antigas. */
+const OPTIONS_VERSION = '2';
 
 /** Mínimo aceito pelo WorkManager no Android. */
 const PERIODIC_MINUTES = 15;
@@ -220,14 +224,22 @@ async function ensurePeriodicTask(): Promise<void> {
  * localização não pode ser criado a partir do 2º plano (limitação do
  * expo-location, ver `maybeStartForegroundService`).
  */
-async function startTasks(): Promise<void> {
-  // Chama sempre, mesmo com a task já registrada: `startLocationUpdatesAsync` é o
-  // único caminho para aplicar opções novas (no nativo ela dispara `setOptions`,
-  // que faz stop + start do serviço). Como o registro da task sobrevive à
-  // atualização do APK, pular esta chamada mantinha as opções gravadas pela versão
-  // anterior — foi assim que o `distanceInterval` antigo continuou valendo depois
-  // de instalar a build que o zerou.
-  await Location.startLocationUpdatesAsync(BACKGROUND_LOCATION_TASK, LOCATION_OPTIONS);
+async function startTasks(force = false): Promise<void> {
+  const started = await Location.hasStartedLocationUpdatesAsync(BACKGROUND_LOCATION_TASK).catch(() => false);
+  const applied = await AsyncStorage.getItem(OPTIONS_VERSION_KEY).catch(() => null);
+
+  // Reaplicar as opções exige `startLocationUpdatesAsync`, que no nativo dispara
+  // `setOptions` → stop + start do serviço. Chamar isso em toda abertura era um
+  // tiro no pé: se o app ainda não estivesse marcado como "foregrounded" nesse
+  // instante, `maybeStartForegroundService` desistia e sobrava localização
+  // registrada SEM foreground service — o regime que o Android estrangula para
+  // poucas atualizações por hora. Versionando as opções, o restart acontece uma
+  // vez por mudança real (ou quando o usuário pede) em vez de a cada launch.
+  if (force || !started || applied !== OPTIONS_VERSION) {
+    await Location.startLocationUpdatesAsync(BACKGROUND_LOCATION_TASK, LOCATION_OPTIONS);
+    await AsyncStorage.setItem(OPTIONS_VERSION_KEY, OPTIONS_VERSION).catch(() => {});
+  }
+
   await ensurePeriodicTask();
 }
 
@@ -239,7 +251,9 @@ export async function startBackgroundUpdates(): Promise<boolean> {
   if (bg.status !== 'granted') return false;
 
   await setBackgroundPreferred(true);
-  await startTasks();
+  // `force`: veio de uma ação explícita do usuário (inclusive o "Reativar"), com o
+  // app garantidamente em primeiro plano — é a hora certa de recriar o serviço.
+  await startTasks(true);
   return true;
 }
 

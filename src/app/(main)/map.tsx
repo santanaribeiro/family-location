@@ -77,6 +77,8 @@ export default function MapScreen() {
   const [own, setOwn] = useState<{ latitude: number; longitude: number } | null>(null);
   const [backgroundOn, setBackgroundOn] = useState(false);
   const [lastRun, setLastRun] = useState<BackgroundRun | null>(null);
+  /** Só para recalcular o "há X" do diagnóstico mesmo quando o registro não muda. */
+  const [diagTick, setDiagTick] = useState(Date.now());
   const [focusTarget, setFocusTarget] = useState<{ latitude: number; longitude: number; key: number } | null>(
     null,
   );
@@ -217,8 +219,17 @@ export default function MapScreen() {
 
   useEffect(() => {
     if (!supportsBackground) return;
-    isBackgroundActive().then(setBackgroundOn).catch(() => {});
-    getLastBackgroundRun().then(setLastRun).catch(() => {});
+    const refresh = () => {
+      isBackgroundActive().then(setBackgroundOn).catch(() => {});
+      getLastBackgroundRun().then(setLastRun).catch(() => {});
+      setDiagTick(Date.now());
+    };
+    refresh();
+    // Releitura periódica: lido só na montagem, o diagnóstico era um retrato do
+    // instante em que a tela abriu — não dava para ver se o serviço está mesmo
+    // reportando a cada 60s, que é a pergunta que ele existe para responder.
+    const id = setInterval(refresh, 10_000);
+    return () => clearInterval(id);
   }, []);
 
   useEffect(() => {
@@ -290,7 +301,9 @@ export default function MapScreen() {
     const alerta =
       minutos > 5 ? ' O sistema parece ter encerrado o serviço — veja a otimização de bateria.' : '';
     return `Última sincronização ${when} (${origem}).${alerta}`;
-  }, [lastRun]);
+    // `diagTick` entra aqui só para o tempo relativo recalcular a cada releitura.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [lastRun, diagTick]);
 
   /**
    * Fabricantes Android matam o serviço de localização por "otimização de bateria" —
