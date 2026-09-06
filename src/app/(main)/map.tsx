@@ -450,6 +450,15 @@ export default function MapScreen() {
                         <Text variant="muted">Compartilhando sua localização o tempo todo.</Text>
                       </View>
                       <Text variant="caption">{backgroundStatusLabel}</Text>
+                      {/* Saída sempre disponível: se o fabricante matar o serviço, a
+                          tela continua dizendo "compartilhando" (ela lê o registro da
+                          task, que sobrevive à morte do processo). Sem este botão não
+                          havia como forçar o religamento pela interface. */}
+                      <Pressable onPress={enableBackground} className="pt-xs">
+                        <Text variant="caption" className="underline">
+                          Reativar compartilhamento
+                        </Text>
+                      </Pressable>
                     </View>
                   ) : (
                     <View className="gap-sm rounded-lg bg-neutral-800 px-md py-md">

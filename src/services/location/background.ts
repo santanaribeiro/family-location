@@ -237,9 +237,21 @@ export async function startBackgroundUpdates(): Promise<boolean> {
  */
 export async function ensureBackgroundUpdates(): Promise<void> {
   if (Platform.OS === 'web') return;
-  if (!(await isBackgroundPreferred())) return;
+
   const permission = await Location.getBackgroundPermissionsAsync();
   if (!permission.granted) return;
+
+  // Reconciliação de estado legado — sem isto o app trava num impasse silencioso.
+  // Quem ligou o compartilhamento antes desta flag existir tem a task registrada e
+  // a preferência vazia; como a tela esconde o botão justamente por ver a task
+  // registrada, não havia como ligar a flag pela interface. Resultado: este re-arme
+  // e a task periódica saíam na primeira linha, enquanto a tela garantia que estava
+  // tudo certo. Adotar a task já registrada como "preferência ligada" desfaz isso
+  // na primeira abertura.
+  if (!(await isBackgroundPreferred())) {
+    if (!(await isBackgroundActive())) return;
+    await setBackgroundPreferred(true);
+  }
   await startTasks();
 }
 
